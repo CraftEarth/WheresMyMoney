@@ -8,3 +8,5 @@ data/*
 
 .DS_Store
 Thumbs.db
+
+plaid.local.php
