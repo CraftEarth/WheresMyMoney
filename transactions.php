@@ -22,6 +22,7 @@ unset(
     ]
 );
 
+
 $stmt = db()->prepare(
     '
     SELECT
@@ -57,20 +58,22 @@ foreach ($transactions as $transaction) {
     ) {
         $needsReviewCount++;
     }
-    $amount = (float) $transaction['amount'];
 
-    if (
-        $transaction['transaction_type']
-        === 'income'
-    ) {
+    $amount = (float) $transaction['amount'];
+    $type = (string) $transaction[
+        'transaction_type'
+    ];
+
+    if ($type === 'income') {
         $totalIncome += $amount;
     }
 
-    if (
-        $transaction['transaction_type']
-        === 'expense'
-    ) {
+    if ($type === 'expense') {
         $totalExpenses += abs($amount);
+    }
+
+    if ($type === 'refund') {
+        $totalExpenses -= abs($amount);
     }
 
     if ((int) $transaction['is_transfer'] === 1) {
@@ -78,9 +81,8 @@ foreach ($transactions as $transaction) {
     }
 }
 
+
 require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';
 require_once APP_ROOT . '/pages/app/transactions.php';
 require_once APP_ROOT . '/includes/footer.php';
-
-

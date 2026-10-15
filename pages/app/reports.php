@@ -237,7 +237,7 @@
                         </small>
 
                         <h2>
-                            Spending Breakdown
+                            Gross Spending Breakdown
                         </h2>
 
                     </div>
@@ -427,3 +427,4 @@
     </main>
 
 </div>
+

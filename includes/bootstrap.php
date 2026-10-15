@@ -18,3 +18,5 @@ require_once APP_ROOT . '/includes/ledger.php';
 require_once APP_ROOT . '/includes/normalization.php';
 
 require_once APP_ROOT . '/includes/plaid.php';
+
+require_once APP_ROOT . '/includes/transaction-classifier.php';

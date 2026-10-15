@@ -17,7 +17,7 @@ $currentMonthEnd = date('Y-m-t');
 
 
 /*
- * Current month income / spending.
+ * Current month income / net spending.
  */
 $stmt = db()->prepare(
     '
@@ -38,6 +38,10 @@ $stmt = db()->prepare(
                 CASE
                     WHEN transaction_type = "expense"
                     THEN ABS(amount)
+
+                    WHEN transaction_type = "refund"
+                    THEN -ABS(amount)
+
                     ELSE 0
                 END
             ),
@@ -73,10 +77,15 @@ $currentSpending = (float) (
 $netCashFlow =
     $currentIncome - $currentSpending;
 
-$savingsRate =
+$rawSavingsRate =
     $currentIncome > 0
         ? ($netCashFlow / $currentIncome) * 100
         : 0;
+
+$savingsRate = min(
+    100,
+    $rawSavingsRate
+);
 
 
 /*
@@ -133,21 +142,44 @@ $totalBudget = (float) $stmt->fetchColumn();
 
 
 /*
- * Spending categories.
+ * Current month net spending categories.
+ *
+ * Refunds offset spending in the same category.
+ * Net-credit categories are not shown as spending.
  */
 $stmt = db()->prepare(
     '
     SELECT
         category,
-        SUM(ABS(amount)) AS amount
+
+        SUM(
+            CASE
+                WHEN transaction_type = "expense"
+                THEN ABS(amount)
+
+                WHEN transaction_type = "refund"
+                THEN -ABS(amount)
+
+                ELSE 0
+            END
+        ) AS amount
+
     FROM transactions
+
     WHERE user_id = :user_id
       AND is_archived = 0
       AND transaction_status = "posted"
-      AND transaction_type = "expense"
+      AND transaction_type IN (
+          "expense",
+          "refund"
+      )
       AND transaction_date
           BETWEEN :month_start AND :month_end
+
     GROUP BY category
+
+    HAVING amount > 0
+
     ORDER BY amount DESC
     '
 );
@@ -160,12 +192,18 @@ $stmt->execute([
 
 $categories = $stmt->fetchAll();
 
+$breakdownTotal = 0.00;
+
+foreach ($categories as $category) {
+    $breakdownTotal += (float) $category['amount'];
+}
+
 foreach ($categories as &$category) {
     $category['percent'] =
-        $currentSpending > 0
+        $breakdownTotal > 0
             ? (
                 (float) $category['amount']
-                / $currentSpending
+                / $breakdownTotal
             ) * 100
             : 0;
 }
@@ -208,6 +246,10 @@ for ($i = 0; $i < 6; $i++) {
                     CASE
                         WHEN transaction_type = "expense"
                         THEN ABS(amount)
+
+                        WHEN transaction_type = "refund"
+                        THEN -ABS(amount)
+
                         ELSE 0
                     END
                 ),
@@ -253,7 +295,7 @@ for ($i = 0; $i < 6; $i++) {
 
 
 /*
- * Largest category.
+ * Largest positive spending category.
  */
 $largestCategory = $categories[0] ?? null;
 
@@ -288,3 +330,4 @@ require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';
 require_once APP_ROOT . '/pages/app/reports.php';
 require_once APP_ROOT . '/includes/footer.php';
+

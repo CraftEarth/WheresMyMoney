@@ -116,7 +116,7 @@
                 </strong>
 
                 <small>
-                    Bills persistence comes next
+                    Unpaid tracked obligations
                 </small>
 
             </article>
@@ -502,7 +502,7 @@
 
                     <div>
                         <small>This month</small>
-                        <h2>Where Did My Money Go?</h2>
+                        <h2>Gross Spending by Category</h2>
                     </div>
 
                 </div>
@@ -734,4 +734,6 @@
     </main>
 
 </div>
+
+
 

@@ -133,6 +133,13 @@ if (
 }
 
 
+/*
+ * Current month income and NET spending.
+ *
+ * Refunds reduce spending.
+ * Transfers are ignored automatically because
+ * they are neither income nor expense/refund.
+ */
 $stmt = db()->prepare(
     '
     SELECT
@@ -152,6 +159,10 @@ $stmt = db()->prepare(
                 CASE
                     WHEN transaction_type = "expense"
                     THEN ABS(amount)
+
+                    WHEN transaction_type = "refund"
+                    THEN -ABS(amount)
+
                     ELSE 0
                 END
             ),
@@ -185,6 +196,9 @@ $monthlySpending = (float) (
 );
 
 
+/*
+ * Bills.
+ */
 $stmt = db()->prepare(
     '
     SELECT
@@ -240,6 +254,9 @@ $stmt->execute([
 $dashboardBills = $stmt->fetchAll();
 
 
+/*
+ * Recent activity.
+ */
 $stmt = db()->prepare(
     '
     SELECT
@@ -265,20 +282,49 @@ $stmt->execute([
 $recentTransactions = $stmt->fetchAll();
 
 
+/*
+ * Net spending by category.
+ *
+ * A refund reduces its original category.
+ * Categories that are net credits are omitted from
+ * "Where Did My Money Go?" because they are not
+ * money that went out this month.
+ */
 $stmt = db()->prepare(
     '
     SELECT
         category,
-        SUM(ABS(amount)) AS amount
+
+        SUM(
+            CASE
+                WHEN transaction_type = "expense"
+                THEN ABS(amount)
+
+                WHEN transaction_type = "refund"
+                THEN -ABS(amount)
+
+                ELSE 0
+            END
+        ) AS amount
+
     FROM transactions
+
     WHERE user_id = :user_id
       AND is_archived = 0
       AND transaction_status = "posted"
-      AND transaction_type = "expense"
+      AND transaction_type IN (
+          "expense",
+          "refund"
+      )
       AND transaction_date
           BETWEEN :month_start AND :month_end
+
     GROUP BY category
+
+    HAVING amount > 0
+
     ORDER BY amount DESC
+
     LIMIT 6
     '
 );
@@ -291,14 +337,20 @@ $stmt->execute([
 
 $categoryRows = $stmt->fetchAll();
 
+$breakdownTotal = 0.00;
+
+foreach ($categoryRows as $row) {
+    $breakdownTotal += (float) $row['amount'];
+}
+
 $spending = [];
 
 foreach ($categoryRows as $row) {
     $categoryAmount = (float) $row['amount'];
 
-    $percent = $monthlySpending > 0
+    $percent = $breakdownTotal > 0
         ? round(
-            ($categoryAmount / $monthlySpending)
+            ($categoryAmount / $breakdownTotal)
             * 100
         )
         : 0;
@@ -356,6 +408,3 @@ require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';
 require_once APP_ROOT . '/pages/app/dashboard.php';
 require_once APP_ROOT . '/includes/footer.php';
-
-
-
