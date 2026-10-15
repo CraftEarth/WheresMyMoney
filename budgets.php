@@ -4,74 +4,102 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 
+require_login();
+
 $pageTitle = 'Budgets';
 $pageType = 'app';
 $activePage = 'budgets';
 
-$budgets = [
-    [
-        'category' => 'Groceries',
-        'budget' => 500.00,
-        'spent' => 349.21,
-    ],
-    [
-        'category' => 'Fuel',
-        'budget' => 250.00,
-        'spent' => 148.63,
-    ],
-    [
-        'category' => 'Utilities',
-        'budget' => 500.00,
-        'spent' => 366.45,
-    ],
-    [
-        'category' => 'Shopping',
-        'budget' => 200.00,
-        'spent' => 174.10,
-    ],
-    [
-        'category' => 'Cannabis',
-        'budget' => 150.00,
-        'spent' => 99.40,
-    ],
-    [
-        'category' => 'Alcohol',
-        'budget' => 100.00,
-        'spent' => 74.82,
-    ],
-    [
-        'category' => 'Entertainment',
-        'budget' => 125.00,
-        'spent' => 48.50,
-    ],
-];
+$userId = current_user_id();
+
+$currentMonth = date('Y-m-01');
+$monthStart = date('Y-m-01');
+$monthEnd = date('Y-m-t');
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM budgets
+    WHERE user_id = :user_id
+      AND budget_month = :budget_month
+      AND is_archived = 0
+    ORDER BY category ASC
+    '
+);
+
+$stmt->execute([
+    'user_id' => $userId,
+    'budget_month' => $currentMonth,
+]);
+
+$budgets = $stmt->fetchAll();
+
+
+$stmt = db()->prepare(
+    '
+    SELECT
+        category,
+        SUM(ABS(amount)) AS spent
+    FROM transactions
+    WHERE user_id = :user_id
+      AND is_archived = 0
+      AND transaction_status = "posted"
+      AND transaction_type = "expense"
+      AND transaction_date
+          BETWEEN :month_start AND :month_end
+    GROUP BY category
+    '
+);
+
+$stmt->execute([
+    'user_id' => $userId,
+    'month_start' => $monthStart,
+    'month_end' => $monthEnd,
+]);
+
+$spendingRows = $stmt->fetchAll();
+
+$spendingByCategory = [];
+
+foreach ($spendingRows as $row) {
+    $spendingByCategory[
+        strtolower($row['category'])
+    ] = (float) $row['spent'];
+}
 
 $totalBudget = 0.00;
 $totalSpent = 0.00;
 
 foreach ($budgets as &$budget) {
-    $budget['remaining'] =
-        (float) $budget['budget']
-        - (float) $budget['spent'];
+    $key = strtolower(
+        $budget['category']
+    );
 
-    $budget['percent'] =
-        $budget['budget'] > 0
-            ? min(
-                100,
-                round(
-                    ($budget['spent'] / $budget['budget'])
-                    * 100
-                )
-            )
-            : 0;
+    $spent = $spendingByCategory[$key]
+        ?? 0.00;
 
-    $totalBudget += (float) $budget['budget'];
-    $totalSpent += (float) $budget['spent'];
+    $limit = (float) $budget[
+        'monthly_limit'
+    ];
+
+    $remaining = $limit - $spent;
+
+    $percent = $limit > 0
+        ? ($spent / $limit) * 100
+        : 0;
+
+    $budget['spent'] = $spent;
+    $budget['remaining'] = $remaining;
+    $budget['percent'] = $percent;
+
+    $totalBudget += $limit;
+    $totalSpent += $spent;
 }
 
 unset($budget);
 
-$totalRemaining = $totalBudget - $totalSpent;
+$totalRemaining =
+    $totalBudget - $totalSpent;
 
 require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';

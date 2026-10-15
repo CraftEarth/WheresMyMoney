@@ -4,71 +4,64 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/bootstrap.php';
 
+require_login();
+
 $pageTitle = 'Crypto';
 $pageType = 'app';
 $activePage = 'crypto';
 
-$holdings = [
-    [
-        'symbol' => 'BTC',
-        'name' => 'Bitcoin',
-        'quantity' => 0.0184,
-        'price' => 67650.00,
-        'change' => 2.84,
-        'source' => 'Coinbase',
-        'network' => 'Bitcoin',
-    ],
-    [
-        'symbol' => 'ETH',
-        'name' => 'Ethereum',
-        'quantity' => 0.42,
-        'price' => 3525.00,
-        'change' => 1.66,
-        'source' => 'MetaMask',
-        'network' => 'Ethereum',
-    ],
-    [
-        'symbol' => 'SOL',
-        'name' => 'Solana',
-        'quantity' => 4.8,
-        'price' => 154.20,
-        'change' => -1.14,
-        'source' => 'Phantom',
-        'network' => 'Solana',
-    ],
-    [
-        'symbol' => 'USDC',
-        'name' => 'USD Coin',
-        'quantity' => 350.00,
-        'price' => 1.00,
-        'change' => 0.01,
-        'source' => 'Coinbase',
-        'network' => 'Base',
-    ],
-];
+$userId = current_user_id();
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM crypto_holdings
+    WHERE user_id = :user_id
+      AND is_archived = 0
+    ORDER BY asset_symbol ASC
+    '
+);
+
+$stmt->execute([
+    'user_id' => $userId,
+]);
+
+$holdings = $stmt->fetchAll();
 
 $totalValue = 0.00;
-$totalChangeValue = 0.00;
+$totalCostBasis = 0.00;
 
 foreach ($holdings as &$holding) {
-    $holding['value'] =
-        (float) $holding['quantity']
-        * (float) $holding['price'];
+    $quantity = (float) $holding['quantity'];
+    $price = (float) $holding['current_price'];
 
-    $holding['change_value'] =
-        $holding['value']
-        * ((float) $holding['change'] / 100);
+    $holding['value'] =
+        $quantity * $price;
+
+    $holding['cost_basis'] =
+        $holding['average_cost'] !== null
+            ? $quantity
+                * (float) $holding['average_cost']
+            : null;
+
+    $holding['gain_loss'] =
+        $holding['cost_basis'] !== null
+            ? $holding['value']
+                - $holding['cost_basis']
+            : null;
 
     $totalValue += $holding['value'];
-    $totalChangeValue += $holding['change_value'];
+
+    if ($holding['cost_basis'] !== null) {
+        $totalCostBasis +=
+            $holding['cost_basis'];
+    }
 }
 
 unset($holding);
 
-$totalChangePercent =
-    $totalValue > 0
-        ? ($totalChangeValue / $totalValue) * 100
-        : 0;
+$totalGainLoss =
+    $totalValue - $totalCostBasis;
 
 require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';

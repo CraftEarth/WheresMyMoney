@@ -15,8 +15,7 @@
                 </h1>
 
                 <p class="settings-subtitle">
-                    Control how accounts, reports,
-                    privacy, and financial totals behave.
+                    Control how your financial dashboard behaves.
                 </p>
 
             </div>
@@ -24,461 +23,305 @@
         </header>
 
 
-        <section class="settings-layout">
+        <?php if ($successMessage !== null): ?>
 
-            <div class="settings-main">
-
-                <article class="settings-card">
-
-                    <div class="settings-card-heading">
-
-                        <div>
-
-                            <small>
-                                Profile
-                            </small>
-
-                            <h2>
-                                Personal Information
-                            </h2>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="settings-form-grid">
-
-                        <label>
-
-                            <span>
-                                Display Name
-                            </span>
-
-                            <input
-                                type="text"
-                                value="Murph"
-                            >
-
-                        </label>
-
-
-                        <label>
-
-                            <span>
-                                Email
-                            </span>
-
-                            <input
-                                type="email"
-                                value="dev@localhost"
-                            >
-
-                        </label>
-
-
-                        <label>
-
-                            <span>
-                                Currency
-                            </span>
-
-                            <select>
-
-                                <option selected>
-                                    USD
-                                </option>
-
-                                <option>
-                                    CAD
-                                </option>
-
-                                <option>
-                                    EUR
-                                </option>
-
-                                <option>
-                                    GBP
-                                </option>
-
-                            </select>
-
-                        </label>
-
-
-                        <label>
-
-                            <span>
-                                Starting Page
-                            </span>
-
-                            <select>
-
-                                <option selected>
-                                    Dashboard
-                                </option>
-
-                                <option>
-                                    Accounts
-                                </option>
-
-                                <option>
-                                    Transactions
-                                </option>
-
-                                <option>
-                                    Reports
-                                </option>
-
-                            </select>
-
-                        </label>
-
-                    </div>
-
-                </article>
-
-
-                <article class="settings-card">
-
-                    <div class="settings-card-heading">
-
-                        <div>
-
-                            <small>
-                                Money calculations
-                            </small>
-
-                            <h2>
-                                Financial Preferences
-                            </h2>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="settings-toggle-list">
-
-                        <label class="settings-toggle-row">
-
-                            <div>
-
-                                <strong>
-                                    Include crypto in net worth
-                                </strong>
-
-                                <small>
-                                    Count tracked crypto holdings
-                                    as part of total net worth.
-                                </small>
-
-                            </div>
-
-                            <input
-                                type="checkbox"
-                                checked
-                            >
-
-                        </label>
-
-
-                        <label class="settings-toggle-row">
-
-                            <div>
-
-                                <strong>
-                                    Include investments in net worth
-                                </strong>
-
-                                <small>
-                                    Count retirement and brokerage
-                                    accounts toward net worth.
-                                </small>
-
-                            </div>
-
-                            <input
-                                type="checkbox"
-                                checked
-                            >
-
-                        </label>
-
-
-                        <label class="settings-toggle-row">
-
-                            <div>
-
-                                <strong>
-                                    Include crypto in safe to spend
-                                </strong>
-
-                                <small>
-                                    Normally disabled because crypto
-                                    is not treated as spendable cash.
-                                </small>
-
-                            </div>
-
-                            <input
-                                type="checkbox"
-                            >
-
-                        </label>
-
-
-                        <label class="settings-toggle-row">
-
-                            <div>
-
-                                <strong>
-                                    Show habit spending
-                                </strong>
-
-                                <small>
-                                    Display user-selected categories
-                                    on dashboard and reports.
-                                </small>
-
-                            </div>
-
-                            <input
-                                type="checkbox"
-                                checked
-                            >
-
-                        </label>
-
-                    </div>
-
-                </article>
-
-
-                <article class="settings-card">
-
-                    <div class="settings-card-heading">
-
-                        <div>
-
-                            <small>
-                                Data
-                            </small>
-
-                            <h2>
-                                Import & Connections
-                            </h2>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="settings-action-list">
-
-                        <div>
-
-                            <div>
-
-                                <strong>
-                                    Financial Connections
-                                </strong>
-
-                                <small>
-                                    Manage linked banks, cards,
-                                    exchanges, and investment accounts.
-                                </small>
-
-                            </div>
-
-                            <button
-                                class="secondary-button"
-                                type="button"
-                            >
-                                Manage
-                            </button>
-
-                        </div>
-
-
-                        <div>
-
-                            <div>
-
-                                <strong>
-                                    CSV Imports
-                                </strong>
-
-                                <small>
-                                    Import transactions from unsupported
-                                    institutions or old statements.
-                                </small>
-
-                            </div>
-
-                            <button
-                                class="secondary-button"
-                                type="button"
-                            >
-                                Import
-                            </button>
-
-                        </div>
-
-
-                        <div>
-
-                            <div>
-
-                                <strong>
-                                    Manual Accounts
-                                </strong>
-
-                                <small>
-                                    Manage physical cash or accounts
-                                    that do not support syncing.
-                                </small>
-
-                            </div>
-
-                            <button
-                                class="secondary-button"
-                                type="button"
-                            >
-                                Manage
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </article>
-
+            <div class="settings-message success-message">
+                <?= e($successMessage); ?>
             </div>
 
-
-            <aside class="settings-side">
-
-                <article class="settings-card">
-
-                    <div class="settings-card-heading">
-
-                        <div>
-
-                            <small>
-                                Security
-                            </small>
-
-                            <h2>
-                                Privacy
-                            </h2>
-
-                        </div>
-
-                    </div>
+        <?php endif; ?>
 
 
-                    <div class="settings-info-list">
+        <?php if ($errorMessage !== null): ?>
 
-                        <div>
+            <div class="settings-message error-message">
+                <?= e($errorMessage); ?>
+            </div>
 
-                            <strong>
-                                Read-only finance access
-                            </strong>
+        <?php endif; ?>
 
-                            <p>
-                                Linked financial services should
-                                only provide balances and transaction
-                                information.
-                            </p>
+
+        <form method="post">
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="<?= e(csrf_token()); ?>"
+            >
+
+
+            <section class="settings-layout">
+
+                <div class="settings-main">
+
+                    <article class="settings-card">
+
+                        <div class="settings-card-heading">
+
+                            <div>
+                                <small>Profile</small>
+                                <h2>Personal Information</h2>
+                            </div>
 
                         </div>
 
 
-                        <div>
+                        <div class="settings-form-grid">
 
-                            <strong>
-                                No bank passwords stored
-                            </strong>
+                            <label>
 
-                            <p>
-                                Institution authentication belongs
-                                to the financial provider connection flow.
-                            </p>
+                                <span>
+                                    Display Name
+                                </span>
+
+                                <input
+                                    type="text"
+                                    name="display_name"
+                                    value="<?= e(
+                                        $user['display_name'] ?? ''
+                                    ); ?>"
+                                    required
+                                >
+
+                            </label>
+
+
+                            <label>
+
+                                <span>
+                                    Email
+                                </span>
+
+                                <input
+                                    type="email"
+                                    value="<?= e(
+                                        $user['email'] ?? ''
+                                    ); ?>"
+                                    disabled
+                                >
+
+                            </label>
+
+
+                            <label>
+
+                                <span>
+                                    Currency
+                                </span>
+
+                                <select name="currency">
+
+                                    <?php foreach (
+                                        ['USD', 'CAD', 'EUR', 'GBP']
+                                        as $currency
+                                    ): ?>
+
+                                        <option
+                                            value="<?= e($currency); ?>"
+                                            <?= (
+                                                $preferences['currency']
+                                                ?? 'USD'
+                                            ) === $currency
+                                                ? 'selected'
+                                                : ''; ?>
+                                        >
+                                            <?= e($currency); ?>
+                                        </option>
+
+                                    <?php endforeach; ?>
+
+                                </select>
+
+                            </label>
+
+
+                            <label>
+
+                                <span>
+                                    Starting Page
+                                </span>
+
+                                <select name="starting_page">
+
+                                    <?php
+                                    $pages = [
+                                        'dashboard' => 'Dashboard',
+                                        'accounts' => 'Accounts',
+                                        'transactions' => 'Transactions',
+                                        'reports' => 'Reports',
+                                    ];
+                                    ?>
+
+                                    <?php foreach (
+                                        $pages as $value => $label
+                                    ): ?>
+
+                                        <option
+                                            value="<?= e($value); ?>"
+                                            <?= (
+                                                $preferences['starting_page']
+                                                ?? 'dashboard'
+                                            ) === $value
+                                                ? 'selected'
+                                                : ''; ?>
+                                        >
+                                            <?= e($label); ?>
+                                        </option>
+
+                                    <?php endforeach; ?>
+
+                                </select>
+
+                            </label>
+
+                        </div>
+
+                    </article>
+
+
+                    <article class="settings-card">
+
+                        <div class="settings-card-heading">
+
+                            <div>
+                                <small>Money calculations</small>
+                                <h2>Financial Preferences</h2>
+                            </div>
 
                         </div>
 
 
-                        <div>
+                        <div class="settings-toggle-list">
 
-                            <strong>
-                                No money movement
-                            </strong>
+                            <?php
+                            $toggles = [
+                                'include_crypto_net_worth' =>
+                                    'Include crypto in net worth',
 
-                            <p>
-                                This application tracks finances.
-                                It does not send payments or withdrawals.
-                            </p>
+                                'include_investments_net_worth' =>
+                                    'Include investments in net worth',
 
-                        </div>
+                                'include_crypto_safe_to_spend' =>
+                                    'Include crypto in safe to spend',
 
-                    </div>
-
-                </article>
-
-
-                <article class="settings-card">
-
-                    <div class="settings-card-heading">
-
-                        <div>
-
-                            <small>
-                                Appearance
-                            </small>
-
-                            <h2>
-                                Interface
-                            </h2>
-
-                        </div>
-
-                    </div>
+                                'show_habit_spending' =>
+                                    'Show habit spending',
+                            ];
+                            ?>
 
 
-                    <label class="settings-toggle-row">
+                            <?php foreach (
+                                $toggles as $name => $label
+                            ): ?>
 
-                        <div>
+                                <label class="settings-toggle-row">
 
-                            <strong>
-                                Dark Mode
-                            </strong>
+                                    <div>
+                                        <strong>
+                                            <?= e($label); ?>
+                                        </strong>
+                                    </div>
 
-                            <small>
-                                Alternate application appearance.
-                            </small>
+                                    <input
+                                        type="checkbox"
+                                        name="<?= e($name); ?>"
+                                        value="1"
+                                        <?= !empty(
+                                            $preferences[$name]
+                                        )
+                                            ? 'checked'
+                                            : ''; ?>
+                                    >
+
+                                </label>
+
+                            <?php endforeach; ?>
 
                         </div>
 
-                        <input
-                            type="checkbox"
+                    </article>
+
+                </div>
+
+
+                <aside class="settings-side">
+
+                    <article class="settings-card">
+
+                        <div class="settings-card-heading">
+
+                            <div>
+                                <small>Appearance</small>
+                                <h2>Interface</h2>
+                            </div>
+
+                        </div>
+
+
+                        <label class="settings-toggle-row">
+
+                            <div>
+
+                                <strong>
+                                    Dark Mode
+                                </strong>
+
+                                <small>
+                                    Stored now. Visual theme
+                                    comes later.
+                                </small>
+
+                            </div>
+
+                            <input
+                                type="checkbox"
+                                name="dark_mode"
+                                value="1"
+                                <?= !empty(
+                                    $preferences['dark_mode']
+                                )
+                                    ? 'checked'
+                                    : ''; ?>
+                            >
+
+                        </label>
+
+                    </article>
+
+
+                    <article class="settings-card">
+
+                        <div class="settings-card-heading">
+
+                            <div>
+                                <small>Account</small>
+                                <h2>Session</h2>
+                            </div>
+
+                        </div>
+
+                        <a
+                            class="settings-logout"
+                            href="<?= e(url('logout.php')); ?>"
                         >
+                            Logout
+                        </a>
 
-                    </label>
-
-                </article>
+                    </article>
 
 
-                <button
-                    class="settings-save-button"
-                    type="button"
-                >
-                    Save Settings
-                </button>
+                    <button
+                        class="settings-save-button"
+                        type="submit"
+                    >
+                        Save Settings
+                    </button>
 
-            </aside>
+                </aside>
 
-        </section>
+            </section>
+
+        </form>
 
     </main>
 

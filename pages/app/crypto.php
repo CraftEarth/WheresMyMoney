@@ -15,27 +15,22 @@
                 </h1>
 
                 <p class="crypto-subtitle">
-                    Track exchange balances, public wallets,
-                    and manually entered holdings.
+                    Track manually entered holdings,
+                    wallets, and exchange balances.
                 </p>
 
             </div>
 
             <div class="crypto-actions">
 
-                <button
-                    class="secondary-button"
-                    type="button"
-                >
-                    Add Wallet
-                </button>
-
-                <button
+                <a
                     class="primary-button"
-                    type="button"
+                    href="<?= e(
+                        url('crypto-form.php')
+                    ); ?>"
                 >
-                    + Connect Exchange
-                </button>
+                    + Add Holding
+                </a>
 
             </div>
 
@@ -54,13 +49,8 @@
                     <?= money($totalValue); ?>
                 </strong>
 
-                <small class="<?= $totalChangeValue >= 0
-                    ? 'positive'
-                    : 'negative'; ?>"
-                >
-                    <?= $totalChangeValue >= 0 ? '+' : '-'; ?>
-                    <?= money(abs($totalChangeValue)); ?>
-                    today
+                <small>
+                    Current tracked value
                 </small>
 
             </article>
@@ -69,22 +59,41 @@
             <article>
 
                 <span>
-                    24h Change
+                    Cost Basis
                 </span>
 
-                <strong class="<?= $totalChangePercent >= 0
-                    ? 'positive'
-                    : 'negative'; ?>"
-                >
-                    <?= $totalChangePercent >= 0 ? '+' : '-'; ?>
-                    <?= number_format(
-                        abs($totalChangePercent),
-                        2
-                    ); ?>%
+                <strong>
+                    <?= money($totalCostBasis); ?>
                 </strong>
 
                 <small>
-                    Across tracked holdings
+                    From entered average cost
+                </small>
+
+            </article>
+
+
+            <article>
+
+                <span>
+                    Gain / Loss
+                </span>
+
+                <strong class="<?= $totalGainLoss >= 0
+                    ? 'positive'
+                    : 'negative'; ?>"
+                >
+                    <?= $totalGainLoss >= 0
+                        ? '+'
+                        : '-'; ?>
+
+                    <?= money(
+                        abs($totalGainLoss)
+                    ); ?>
+                </strong>
+
+                <small>
+                    Tracked unrealized position
                 </small>
 
             </article>
@@ -101,24 +110,7 @@
                 </strong>
 
                 <small>
-                    Tracked coins and tokens
-                </small>
-
-            </article>
-
-
-            <article>
-
-                <span>
-                    Sources
-                </span>
-
-                <strong>
-                    3
-                </strong>
-
-                <small>
-                    Exchanges and wallets
+                    Active holdings
                 </small>
 
             </article>
@@ -126,30 +118,50 @@
         </section>
 
 
-        <section class="crypto-layout">
+        <section class="crypto-card">
 
-            <div class="crypto-card">
+            <div class="crypto-card-heading">
 
-                <div class="crypto-card-heading">
+                <div>
 
-                    <div>
+                    <small>
+                        Holdings
+                    </small>
 
-                        <small>
-                            Holdings
-                        </small>
-
-                        <h2>
-                            Crypto Portfolio
-                        </h2>
-
-                    </div>
-
-                    <div class="crypto-filter">
-                        Current Value
-                    </div>
+                    <h2>
+                        Crypto Portfolio
+                    </h2>
 
                 </div>
 
+            </div>
+
+
+            <?php if ($holdings === []): ?>
+
+                <div class="accounts-empty">
+
+                    <strong>
+                        No crypto holdings yet.
+                    </strong>
+
+                    <p>
+                        Add a manual holding to begin
+                        tracking its value.
+                    </p>
+
+                    <a
+                        class="primary-button"
+                        href="<?= e(
+                            url('crypto-form.php')
+                        ); ?>"
+                    >
+                        Add Holding
+                    </a>
+
+                </div>
+
+            <?php else: ?>
 
                 <div class="crypto-table">
 
@@ -158,31 +170,45 @@
                         <span>Asset</span>
                         <span>Quantity</span>
                         <span>Price</span>
-                        <span>24h</span>
                         <span>Source</span>
                         <span>Value</span>
+                        <span>Gain / Loss</span>
+                        <span>Actions</span>
 
                     </div>
 
 
-                    <?php foreach ($holdings as $holding): ?>
+                    <?php foreach (
+                        $holdings as $holding
+                    ): ?>
 
                         <article class="crypto-table-row">
 
                             <div class="crypto-asset-cell">
 
                                 <span class="crypto-symbol">
-                                    <?= e($holding['symbol']); ?>
+                                    <?= e(
+                                        $holding[
+                                            'asset_symbol'
+                                        ]
+                                    ); ?>
                                 </span>
 
                                 <div>
 
                                     <strong>
-                                        <?= e($holding['name']); ?>
+                                        <?= e(
+                                            $holding[
+                                                'asset_name'
+                                            ]
+                                        ); ?>
                                     </strong>
 
                                     <small>
-                                        <?= e($holding['network']); ?>
+                                        <?= e(
+                                            $holding['network']
+                                            ?? 'Manual'
+                                        ); ?>
                                     </small>
 
                                 </div>
@@ -192,43 +218,28 @@
 
                             <div>
                                 <?= number_format(
-                                    (float) $holding['quantity'],
-                                    4
+                                    (float) $holding[
+                                        'quantity'
+                                    ],
+                                    6
                                 ); ?>
                             </div>
 
 
                             <div>
                                 <?= money(
-                                    (float) $holding['price']
+                                    (float) $holding[
+                                        'current_price'
+                                    ]
                                 ); ?>
                             </div>
 
 
-                            <div
-                                class="<?= $holding['change'] >= 0
-                                    ? 'positive'
-                                    : 'negative'; ?>"
-                            >
-                                <?= $holding['change'] >= 0
-                                    ? '+'
-                                    : '-'; ?>
-
-                                <?= number_format(
-                                    abs(
-                                        (float) $holding['change']
-                                    ),
-                                    2
-                                ); ?>%
-                            </div>
-
-
                             <div>
-
-                                <span class="crypto-source-badge">
-                                    <?= e($holding['source']); ?>
-                                </span>
-
+                                <?= e(
+                                    $holding['source_name']
+                                    ?? 'Manual'
+                                ); ?>
                             </div>
 
 
@@ -236,9 +247,99 @@
 
                                 <strong>
                                     <?= money(
-                                        (float) $holding['value']
+                                        (float) $holding[
+                                            'value'
+                                        ]
                                     ); ?>
                                 </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <?php if (
+                                    $holding['gain_loss']
+                                    !== null
+                                ): ?>
+
+                                    <strong class="<?= (
+                                        (float) $holding[
+                                            'gain_loss'
+                                        ] >= 0
+                                    )
+                                        ? 'positive'
+                                        : 'negative'; ?>"
+                                    >
+                                        <?= (
+                                            (float) $holding[
+                                                'gain_loss'
+                                            ] >= 0
+                                        )
+                                            ? '+'
+                                            : '-'; ?>
+
+                                        <?= money(
+                                            abs(
+                                                (float) $holding[
+                                                    'gain_loss'
+                                                ]
+                                            )
+                                        ); ?>
+                                    </strong>
+
+                                <?php else: ?>
+
+                                    -
+
+                                <?php endif; ?>
+
+                            </div>
+
+
+                            <div class="crypto-actions-cell">
+
+                                <a
+                                    href="<?= e(
+                                        url(
+                                            'crypto-form.php?id='
+                                            . $holding['id']
+                                        )
+                                    ); ?>"
+                                >
+                                    Edit
+                                </a>
+
+                                <form
+                                    method="post"
+                                    action="<?= e(
+                                        url(
+                                            'crypto-archive.php'
+                                        )
+                                    ); ?>"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= e(
+                                            csrf_token()
+                                        ); ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="holding_id"
+                                        value="<?= (int) $holding[
+                                            'id'
+                                        ]; ?>"
+                                    >
+
+                                    <button type="submit">
+                                        Archive
+                                    </button>
+
+                                </form>
 
                             </div>
 
@@ -248,80 +349,7 @@
 
                 </div>
 
-            </div>
-
-
-            <aside class="crypto-side-card">
-
-                <small>
-                    Portfolio mix
-                </small>
-
-                <h2>
-                    Asset Breakdown
-                </h2>
-
-                <div class="crypto-allocation-list">
-
-                    <?php foreach ($holdings as $holding): ?>
-
-                        <?php
-                        $allocation =
-                            $totalValue > 0
-                                ? (
-                                    $holding['value']
-                                    / $totalValue
-                                ) * 100
-                                : 0;
-                        ?>
-
-                        <div class="crypto-allocation-row">
-
-                            <div>
-
-                                <span>
-                                    <?= e($holding['symbol']); ?>
-                                </span>
-
-                                <strong>
-                                    <?= number_format(
-                                        $allocation,
-                                        1
-                                    ); ?>%
-                                </strong>
-
-                            </div>
-
-                            <div class="crypto-allocation-track">
-
-                                <span
-                                    style="width: <?= (int) round($allocation); ?>%;"
-                                ></span>
-
-                            </div>
-
-                        </div>
-
-                    <?php endforeach; ?>
-
-                </div>
-
-
-                <div class="crypto-note">
-
-                    <strong>
-                        Read-only tracking
-                    </strong>
-
-                    <p>
-                        Public wallet addresses and supported
-                        exchange connections should never require
-                        seed phrases or private keys.
-                    </p>
-
-                </div>
-
-            </aside>
+            <?php endif; ?>
 
         </section>
 

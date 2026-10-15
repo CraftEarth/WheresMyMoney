@@ -2466,3 +2466,357 @@
         padding: 16px 0;
     }
 }
+.settings-message {
+    margin-bottom: 18px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.success-message {
+    background: #e8f8f1;
+    color: #16875f;
+}
+
+.error-message {
+    background: #fff0f1;
+    color: #a73340;
+}
+
+.settings-logout {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e1e6ef;
+    border-radius: 11px;
+    color: #c74452;
+    font-size: 12px;
+    font-weight: 900;
+}
+.account-summary-grid {
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+}
+
+.accounts-empty {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.accounts-empty strong {
+    display: block;
+    font-size: 18px;
+}
+
+.accounts-empty p {
+    margin: 8px 0 20px;
+    color: #7c8798;
+    font-size: 13px;
+}
+
+.account-actions-cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.account-actions-cell a,
+.account-actions-cell button {
+    border: 0;
+    background: transparent;
+    color: #315efb;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.account-actions-cell form {
+    margin: 0;
+}
+
+.account-actions-cell button {
+    color: #c74452;
+}
+
+.account-form-card {
+    padding: 26px;
+    border: 1px solid #e5e9f1;
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow:
+        0 7px 24px rgba(31, 49, 84, 0.05);
+}
+
+.account-form {
+    display: grid;
+    gap: 24px;
+}
+
+.account-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.account-form-grid label {
+    display: grid;
+    gap: 7px;
+}
+
+.account-form-grid label span {
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.account-form-grid input,
+.account-form-grid select {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #dfe5ee;
+    border-radius: 11px;
+    outline: 0;
+    background: #ffffff;
+    color: #172033;
+    font: inherit;
+}
+
+.account-form-grid input:focus,
+.account-form-grid select:focus {
+    border-color: #315efb;
+}
+
+.account-toggle-list {
+    display: grid;
+    border-top: 1px solid #edf0f5;
+}
+
+.account-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.account-form-actions .primary-button,
+.account-form-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 900px) {
+    .account-summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .account-summary-grid,
+    .account-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-form-actions {
+        flex-direction: column;
+    }
+}
+.transactions-table-head,
+.transactions-table-row {
+    grid-template-columns:
+        85px
+        minmax(210px, 1.4fr)
+        minmax(130px, 0.9fr)
+        minmax(150px, 1fr)
+        90px
+        110px
+        100px;
+}
+
+.transaction-actions-cell {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.transaction-actions-cell form {
+    margin: 0;
+}
+
+.transaction-actions-cell a,
+.transaction-actions-cell button {
+    border: 0;
+    background: transparent;
+    color: #315efb;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.transaction-actions-cell button {
+    color: #c74452;
+}
+
+.transaction-notes-field {
+    display: grid;
+    gap: 7px;
+}
+
+.transaction-notes-field > span {
+    color: #667085;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.transaction-notes-field textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #dfe5ee;
+    border-radius: 11px;
+    outline: 0;
+    resize: vertical;
+    font: inherit;
+}
+
+.transaction-notes-field textarea:focus {
+    border-color: #315efb;
+}
+
+.transactions-actions .primary-button,
+.accounts-actions .secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.dashboard-empty {
+    padding: 24px 10px;
+    color: #8b95a7;
+    font-size: 12px;
+    text-align: center;
+}
+.bills-table-head,
+.bills-table-row {
+    grid-template-columns:
+        minmax(190px, 1.25fr)
+        90px
+        100px
+        minmax(140px, 1fr)
+        75px
+        100px
+        100px
+        95px;
+}
+
+.bill-actions-cell {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+.bill-actions-cell form {
+    margin: 0;
+}
+
+.bill-actions-cell a,
+.bill-actions-cell button {
+    border: 0;
+    background: transparent;
+    color: #315efb;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.bill-actions-cell button {
+    color: #c74452;
+}
+
+.bill-status-badge.overdue {
+    background: #fff0f1;
+    color: #c74452;
+}
+
+.bill-status-badge.upcoming {
+    background: #eef3ff;
+    color: #315efb;
+}
+.budget-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.budget-actions form {
+    margin: 0;
+}
+
+.budget-actions a,
+.budget-actions button {
+    border: 0;
+    background: transparent;
+    color: #315efb;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.budget-actions button {
+    color: #c74452;
+}
+
+.budgets-actions .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.crypto-table-head,
+.crypto-table-row {
+    grid-template-columns:
+        minmax(180px, 1.3fr)
+        105px
+        110px
+        120px
+        120px
+        120px
+        95px;
+}
+
+.crypto-actions-cell {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+}
+
+.crypto-actions-cell form {
+    margin: 0;
+}
+
+.crypto-actions-cell a,
+.crypto-actions-cell button {
+    border: 0;
+    background: transparent;
+    color: #315efb;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.crypto-actions-cell button {
+    color: #c74452;
+}
+
+.crypto-actions .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

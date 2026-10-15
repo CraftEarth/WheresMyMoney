@@ -15,8 +15,8 @@
                 </h1>
 
                 <p class="transactions-subtitle">
-                    Review income, spending, transfers,
-                    and anything that needs attention.
+                    Real income, spending, and transfers
+                    recorded under your account.
                 </p>
 
             </div>
@@ -31,12 +31,14 @@
                     Import
                 </button>
 
-                <button
+                <a
                     class="primary-button"
-                    type="button"
+                    href="<?= e(
+                        url('transaction-form.php')
+                    ); ?>"
                 >
                     + Add Transaction
-                </button>
+                </a>
 
             </div>
 
@@ -56,7 +58,7 @@
                 </strong>
 
                 <small>
-                    This period
+                    Excludes transfers
                 </small>
 
             </article>
@@ -107,7 +109,7 @@
                 </strong>
 
                 <small>
-                    Tracked activity
+                    Active records
                 </small>
 
             </article>
@@ -117,144 +119,238 @@
 
         <section class="transactions-card">
 
-            <div class="transactions-toolbar">
+            <?php if ($transactions === []): ?>
 
-                <div class="transactions-search">
+                <div class="accounts-empty">
 
-                    <input
-                        type="search"
-                        placeholder="Search merchant or description..."
+                    <strong>
+                        No transactions yet.
+                    </strong>
+
+                    <p>
+                        Add your first transaction
+                        to begin building real reports.
+                    </p>
+
+                    <a
+                        class="primary-button"
+                        href="<?= e(
+                            url('transaction-form.php')
+                        ); ?>"
                     >
+                        Add Transaction
+                    </a>
 
                 </div>
 
+            <?php else: ?>
 
-                <div class="transactions-filters">
+                <div class="transactions-table">
 
-                    <button
-                        class="active"
-                        type="button"
-                    >
-                        All
-                    </button>
+                    <div class="transactions-table-head">
 
-                    <button type="button">
-                        Income
-                    </button>
+                        <span>Date</span>
+                        <span>Description</span>
+                        <span>Category</span>
+                        <span>Account</span>
+                        <span>Status</span>
+                        <span>Amount</span>
+                        <span>Actions</span>
 
-                    <button type="button">
-                        Spending
-                    </button>
-
-                    <button type="button">
-                        Transfers
-                    </button>
-
-                    <button type="button">
-                        Needs Review
-                    </button>
-
-                </div>
-
-            </div>
+                    </div>
 
 
-            <div class="transactions-table">
+                    <?php foreach (
+                        $transactions as $transaction
+                    ): ?>
 
-                <div class="transactions-table-head">
+                        <article class="transactions-table-row">
 
-                    <span>Date</span>
-                    <span>Description</span>
-                    <span>Category</span>
-                    <span>Account</span>
-                    <span>Status</span>
-                    <span>Amount</span>
-
-                </div>
-
-
-                <?php foreach ($transactions as $transaction): ?>
-
-                    <article class="transactions-table-row">
-
-                        <div class="transaction-date-cell">
-                            <?= e($transaction['date']); ?>
-                        </div>
-
-
-                        <div class="transaction-name-cell">
-
-                            <span class="transaction-icon">
+                            <div class="transaction-date-cell">
 
                                 <?= e(
-                                    strtoupper(
-                                        substr(
-                                            $transaction['name'],
-                                            0,
-                                            1
+                                    date(
+                                        'M j',
+                                        strtotime(
+                                            $transaction[
+                                                'transaction_date'
+                                            ]
                                         )
                                     )
                                 ); ?>
 
-                            </span>
+                            </div>
 
-                            <div>
 
-                                <strong>
-                                    <?= e($transaction['name']); ?>
-                                </strong>
+                            <div class="transaction-name-cell">
 
-                                <small>
-                                    <?= e($transaction['type']); ?>
-                                </small>
+                                <span class="transaction-icon">
+
+                                    <?= e(
+                                        strtoupper(
+                                            substr(
+                                                $transaction[
+                                                    'description'
+                                                ],
+                                                0,
+                                                1
+                                            )
+                                        )
+                                    ); ?>
+
+                                </span>
+
+                                <div>
+
+                                    <strong>
+                                        <?= e(
+                                            $transaction[
+                                                'description'
+                                            ]
+                                        ); ?>
+                                    </strong>
+
+                                    <small>
+
+                                        <?= e(
+                                            ucwords(
+                                                str_replace(
+                                                    '_',
+                                                    ' ',
+                                                    $transaction[
+                                                        'transaction_type'
+                                                    ]
+                                                )
+                                            )
+                                        ); ?>
+
+                                        <?php if (
+                                            (int) $transaction[
+                                                'is_recurring'
+                                            ] === 1
+                                        ): ?>
+
+                                            - Recurring
+
+                                        <?php endif; ?>
+
+                                    </small>
+
+                                </div>
 
                             </div>
 
-                        </div>
+
+                            <div>
+                                <?= e(
+                                    $transaction['category']
+                                ); ?>
+                            </div>
 
 
-                        <div>
-                            <?= e($transaction['category']); ?>
-                        </div>
+                            <div>
+                                <?= e(
+                                    $transaction['account_name']
+                                ); ?>
+                            </div>
 
 
-                        <div>
-                            <?= e($transaction['account']); ?>
-                        </div>
+                            <div>
+
+                                <span class="status-badge">
+                                    <?= e(
+                                        ucfirst(
+                                            $transaction[
+                                                'transaction_status'
+                                            ]
+                                        )
+                                    ); ?>
+                                </span>
+
+                            </div>
 
 
-                        <div>
-
-                            <span class="status-badge">
-                                <?= e($transaction['status']); ?>
-                            </span>
-
-                        </div>
-
-
-                        <div
-                            class="transaction-amount-cell <?= $transaction['amount'] >= 0
-                                ? 'positive'
-                                : 'negative'; ?>"
-                        >
-
-                            <?= $transaction['amount'] >= 0
-                                ? '+'
-                                : '-'; ?>
-
-                            <?= money(
-                                abs(
+                            <div
+                                class="transaction-amount-cell <?= (
                                     (float) $transaction['amount']
+                                    >= 0
                                 )
-                            ); ?>
+                                    ? 'positive'
+                                    : 'negative'; ?>"
+                            >
 
-                        </div>
+                                <?= (
+                                    (float) $transaction['amount']
+                                    >= 0
+                                )
+                                    ? '+'
+                                    : '-'; ?>
 
-                    </article>
+                                <?= money(
+                                    abs(
+                                        (float) $transaction[
+                                            'amount'
+                                        ]
+                                    )
+                                ); ?>
 
-                <?php endforeach; ?>
+                            </div>
 
-            </div>
+
+                            <div class="transaction-actions-cell">
+
+                                <a
+                                    href="<?= e(
+                                        url(
+                                            'transaction-form.php?id='
+                                            . $transaction['id']
+                                        )
+                                    ); ?>"
+                                >
+                                    Edit
+                                </a>
+
+
+                                <form
+                                    method="post"
+                                    action="<?= e(
+                                        url(
+                                            'transaction-archive.php'
+                                        )
+                                    ); ?>"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= e(
+                                            csrf_token()
+                                        ); ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="transaction_id"
+                                        value="<?= (int) $transaction[
+                                            'id'
+                                        ]; ?>"
+                                    >
+
+                                    <button type="submit">
+                                        Archive
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </article>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php endif; ?>
 
         </section>
 

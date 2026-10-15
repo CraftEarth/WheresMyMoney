@@ -15,27 +15,22 @@
                 </h1>
 
                 <p class="budgets-subtitle">
-                    Set limits, compare actual spending,
-                    and see what remains.
+                    Your real transaction spending
+                    compared against the limits you set.
                 </p>
 
             </div>
 
             <div class="budgets-actions">
 
-                <button
-                    class="secondary-button"
-                    type="button"
-                >
-                    Copy Last Month
-                </button>
-
-                <button
+                <a
                     class="primary-button"
-                    type="button"
+                    href="<?= e(
+                        url('budget-form.php')
+                    ); ?>"
                 >
                     + Add Budget
-                </button>
+                </a>
 
             </div>
 
@@ -55,7 +50,7 @@
                 </strong>
 
                 <small>
-                    Across tracked categories
+                    Total planned spending
                 </small>
 
             </article>
@@ -72,7 +67,7 @@
                 </strong>
 
                 <small>
-                    This month
+                    Real posted expenses
                 </small>
 
             </article>
@@ -84,12 +79,19 @@
                     Remaining
                 </span>
 
-                <strong class="positive">
-                    <?= money($totalRemaining); ?>
+                <strong class="<?= $totalRemaining >= 0
+                    ? 'positive'
+                    : 'negative'; ?>"
+                >
+                    <?= $totalRemaining >= 0
+                        ? money($totalRemaining)
+                        : '-' . money(
+                            abs($totalRemaining)
+                        ); ?>
                 </strong>
 
                 <small>
-                    Still available
+                    Budget still available
                 </small>
 
             </article>
@@ -106,7 +108,7 @@
                 </strong>
 
                 <small>
-                    With active budgets
+                    Active budgets this month
                 </small>
 
             </article>
@@ -114,30 +116,57 @@
         </section>
 
 
-        <section class="budgets-layout">
+        <section class="budgets-card">
 
-            <div class="budgets-card">
+            <div class="budgets-card-heading">
 
-                <div class="budgets-card-heading">
+                <div>
 
-                    <div>
+                    <small>
+                        This month
+                    </small>
 
-                        <small>
-                            This month
-                        </small>
-
-                        <h2>
-                            Category Budgets
-                        </h2>
-
-                    </div>
-
-                    <div class="budget-month">
-                        October 2026
-                    </div>
+                    <h2>
+                        Category Budgets
+                    </h2>
 
                 </div>
 
+                <div class="budget-month">
+                    <?= e(
+                        date('F Y')
+                    ); ?>
+                </div>
+
+            </div>
+
+
+            <?php if ($budgets === []): ?>
+
+                <div class="accounts-empty">
+
+                    <strong>
+                        No budgets yet.
+                    </strong>
+
+                    <p>
+                        Add a category budget and its
+                        real transaction spending will
+                        appear automatically.
+                    </p>
+
+                    <a
+                        class="primary-button"
+                        href="<?= e(
+                            url('budget-form.php')
+                        ); ?>"
+                    >
+                        Add Budget
+                    </a>
+
+                </div>
+
+            <?php else: ?>
 
                 <div class="budget-list">
 
@@ -150,20 +179,25 @@
                                 <div>
 
                                     <strong>
-                                        <?= e($budget['category']); ?>
+                                        <?= e(
+                                            $budget['category']
+                                        ); ?>
                                     </strong>
 
                                     <small>
                                         <?= money(
                                             (float) $budget['spent']
                                         ); ?>
-                                        of
+                                        spent of
                                         <?= money(
-                                            (float) $budget['budget']
+                                            (float) $budget[
+                                                'monthly_limit'
+                                            ]
                                         ); ?>
                                     </small>
 
                                 </div>
+
 
                                 <div class="budget-remaining">
 
@@ -171,15 +205,39 @@
                                         Remaining
                                     </span>
 
-                                    <strong class="<?= $budget['remaining'] >= 0
+                                    <strong class="<?= (
+                                        (float) $budget[
+                                            'remaining'
+                                        ] >= 0
+                                    )
                                         ? 'positive'
                                         : 'negative'; ?>"
                                     >
-                                        <?= money(
-                                            abs(
-                                                (float) $budget['remaining']
-                                            )
-                                        ); ?>
+
+                                        <?php if (
+                                            (float) $budget[
+                                                'remaining'
+                                            ] >= 0
+                                        ): ?>
+
+                                            <?= money(
+                                                (float) $budget[
+                                                    'remaining'
+                                                ]
+                                            ); ?>
+
+                                        <?php else: ?>
+
+                                            -<?= money(
+                                                abs(
+                                                    (float) $budget[
+                                                        'remaining'
+                                                    ]
+                                                )
+                                            ); ?>
+
+                                        <?php endif; ?>
+
                                     </strong>
 
                                 </div>
@@ -190,10 +248,21 @@
                             <div class="budget-progress">
 
                                 <span
-                                    style="width: <?= (int) $budget['percent']; ?>%;"
-                                    class="<?= $budget['percent'] >= 90
+                                    class="<?= (
+                                        (float) $budget[
+                                            'percent'
+                                        ] >= 90
+                                    )
                                         ? 'near-limit'
                                         : ''; ?>"
+                                    style="width: <?= min(
+                                        100,
+                                        (int) round(
+                                            $budget[
+                                                'percent'
+                                            ]
+                                        )
+                                    ); ?>%;"
                                 ></span>
 
                             </div>
@@ -202,12 +271,61 @@
                             <div class="budget-row-bottom">
 
                                 <small>
-                                    <?= (int) $budget['percent']; ?>% used
+                                    <?= number_format(
+                                        (float) $budget[
+                                            'percent'
+                                        ],
+                                        1
+                                    ); ?>% used
                                 </small>
 
-                                <button type="button">
-                                    Edit
-                                </button>
+
+                                <div class="budget-actions">
+
+                                    <a
+                                        href="<?= e(
+                                            url(
+                                                'budget-form.php?id='
+                                                . $budget['id']
+                                            )
+                                        ); ?>"
+                                    >
+                                        Edit
+                                    </a>
+
+
+                                    <form
+                                        method="post"
+                                        action="<?= e(
+                                            url(
+                                                'budget-archive.php'
+                                            )
+                                        ); ?>"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?= e(
+                                                csrf_token()
+                                            ); ?>"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="budget_id"
+                                            value="<?= (int) $budget[
+                                                'id'
+                                            ]; ?>"
+                                        >
+
+                                        <button type="submit">
+                                            Archive
+                                        </button>
+
+                                    </form>
+
+                                </div>
 
                             </div>
 
@@ -217,74 +335,7 @@
 
                 </div>
 
-            </div>
-
-
-            <aside class="budget-side-card">
-
-                <small>
-                    Budget overview
-                </small>
-
-                <h2>
-                    Monthly Position
-                </h2>
-
-
-                <div class="budget-side-stat">
-
-                    <span>
-                        Planned
-                    </span>
-
-                    <strong>
-                        <?= money($totalBudget); ?>
-                    </strong>
-
-                </div>
-
-
-                <div class="budget-side-stat">
-
-                    <span>
-                        Used
-                    </span>
-
-                    <strong>
-                        <?= money($totalSpent); ?>
-                    </strong>
-
-                </div>
-
-
-                <div class="budget-side-stat budget-side-highlight">
-
-                    <span>
-                        Remaining
-                    </span>
-
-                    <strong>
-                        <?= money($totalRemaining); ?>
-                    </strong>
-
-                </div>
-
-
-                <div class="budget-note">
-
-                    <strong>
-                        Neutral tracking
-                    </strong>
-
-                    <p>
-                        Budgets show spending against the limits
-                        you choose. Categories remain user-defined
-                        and judgment-free.
-                    </p>
-
-                </div>
-
-            </aside>
+            <?php endif; ?>
 
         </section>
 

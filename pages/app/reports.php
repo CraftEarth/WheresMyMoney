@@ -15,8 +15,8 @@
                 </h1>
 
                 <p class="reports-subtitle">
-                    Review cash flow, spending patterns,
-                    categories, and month-to-month changes.
+                    Real cash flow, spending,
+                    bills, and budget performance.
                 </p>
 
             </div>
@@ -26,15 +26,9 @@
                 <button
                     class="secondary-button"
                     type="button"
+                    onclick="window.print();"
                 >
-                    Export
-                </button>
-
-                <button
-                    class="primary-button"
-                    type="button"
-                >
-                    Print Report
+                    Print
                 </button>
 
             </div>
@@ -51,11 +45,11 @@
                 </span>
 
                 <strong class="positive">
-                    +<?= money((float) $current['income']); ?>
+                    +<?= money($currentIncome); ?>
                 </strong>
 
                 <small>
-                    October 2026
+                    <?= e(date('F Y')); ?>
                 </small>
 
             </article>
@@ -68,11 +62,11 @@
                 </span>
 
                 <strong class="negative">
-                    -<?= money((float) $current['spending']); ?>
+                    -<?= money($currentSpending); ?>
                 </strong>
 
                 <small>
-                    Excludes transfers
+                    Transfers excluded
                 </small>
 
             </article>
@@ -88,8 +82,13 @@
                     ? 'positive'
                     : 'negative'; ?>"
                 >
-                    <?= $netCashFlow >= 0 ? '+' : '-'; ?>
-                    <?= money(abs($netCashFlow)); ?>
+                    <?= $netCashFlow >= 0
+                        ? '+'
+                        : '-'; ?>
+
+                    <?= money(
+                        abs($netCashFlow)
+                    ); ?>
                 </strong>
 
                 <small>
@@ -106,11 +105,14 @@
                 </span>
 
                 <strong>
-                    <?= number_format($savingsRate, 1); ?>%
+                    <?= number_format(
+                        $savingsRate,
+                        1
+                    ); ?>%
                 </strong>
 
                 <small>
-                    Based on tracked cash flow
+                    Based on tracked income
                 </small>
 
             </article>
@@ -141,13 +143,9 @@
 
                 <div class="report-history">
 
-                    <?php foreach ($monthly as $month): ?>
-
-                        <?php
-                        $monthNet =
-                            (float) $month['income']
-                            - (float) $month['spending'];
-                        ?>
+                    <?php foreach (
+                        $monthlyHistory as $month
+                    ): ?>
 
                         <div class="report-history-row">
 
@@ -158,7 +156,7 @@
                                 </strong>
 
                                 <small>
-                                    Tracked activity
+                                    Posted transactions
                                 </small>
 
                             </div>
@@ -172,7 +170,7 @@
 
                                 <strong class="positive">
                                     +<?= money(
-                                        (float) $month['income']
+                                        $month['income']
                                     ); ?>
                                 </strong>
 
@@ -187,7 +185,7 @@
 
                                 <strong class="negative">
                                     -<?= money(
-                                        (float) $month['spending']
+                                        $month['spending']
                                     ); ?>
                                 </strong>
 
@@ -200,12 +198,21 @@
                                     Net
                                 </span>
 
-                                <strong class="<?= $monthNet >= 0
+                                <strong class="<?= (
+                                    $month['net'] >= 0
+                                )
                                     ? 'positive'
                                     : 'negative'; ?>"
                                 >
-                                    <?= $monthNet >= 0 ? '+' : '-'; ?>
-                                    <?= money(abs($monthNet)); ?>
+                                    <?= $month['net'] >= 0
+                                        ? '+'
+                                        : '-'; ?>
+
+                                    <?= money(
+                                        abs(
+                                            $month['net']
+                                        )
+                                    ); ?>
                                 </strong>
 
                             </div>
@@ -226,7 +233,7 @@
                     <div>
 
                         <small>
-                            Categories
+                            This month
                         </small>
 
                         <h2>
@@ -238,44 +245,74 @@
                 </div>
 
 
-                <div class="report-category-list">
+                <?php if ($categories === []): ?>
 
-                    <?php foreach ($categories as $category): ?>
+                    <div class="dashboard-empty">
+                        No expense data this month.
+                    </div>
 
-                        <div class="report-category-row">
+                <?php else: ?>
 
-                            <div class="report-category-top">
+                    <div class="report-category-list">
 
-                                <span>
-                                    <?= e($category['name']); ?>
-                                </span>
+                        <?php foreach (
+                            $categories as $category
+                        ): ?>
 
-                                <strong>
-                                    <?= money(
-                                        (float) $category['amount']
-                                    ); ?>
-                                </strong>
+                            <div class="report-category-row">
+
+                                <div class="report-category-top">
+
+                                    <span>
+                                        <?= e(
+                                            $category['category']
+                                        ); ?>
+                                    </span>
+
+                                    <strong>
+                                        <?= money(
+                                            (float) $category[
+                                                'amount'
+                                            ]
+                                        ); ?>
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="report-category-track">
+
+                                    <span
+                                        style="width: <?= min(
+                                            100,
+                                            (int) round(
+                                                $category[
+                                                    'percent'
+                                                ]
+                                            )
+                                        ); ?>%;"
+                                    ></span>
+
+                                </div>
+
+
+                                <small>
+                                    <?= number_format(
+                                        (float) $category[
+                                            'percent'
+                                        ],
+                                        1
+                                    ); ?>%
+                                    of spending
+                                </small>
 
                             </div>
 
-                            <div class="report-category-track">
+                        <?php endforeach; ?>
 
-                                <span
-                                    style="width: <?= (int) $category['percent']; ?>%;"
-                                ></span>
+                    </div>
 
-                            </div>
-
-                            <small>
-                                <?= (int) $category['percent']; ?>%
-                                of tracked spending
-                            </small>
-
-                        </div>
-
-                    <?php endforeach; ?>
-
-                </div>
+                <?php endif; ?>
 
             </article>
 
@@ -287,7 +324,7 @@
                     <div>
 
                         <small>
-                            Summary
+                            Current position
                         </small>
 
                         <h2>
@@ -308,11 +345,22 @@
                         </span>
 
                         <strong>
-                            Groceries
+                            <?= e(
+                                $largestCategory[
+                                    'category'
+                                ]
+                                ?? 'None'
+                            ); ?>
                         </strong>
 
                         <small>
-                            $349.21 tracked
+                            <?= $largestCategory
+                                ? money(
+                                    (float) $largestCategory[
+                                        'amount'
+                                    ]
+                                )
+                                : '$0.00'; ?>
                         </small>
 
                     </div>
@@ -321,15 +369,32 @@
                     <div>
 
                         <span>
-                            Bills This Month
+                            Upcoming Bills
                         </span>
 
                         <strong>
-                            <?= money((float) $current['bills']); ?>
+                            <?= money($upcomingBills); ?>
                         </strong>
 
                         <small>
-                            Scheduled obligations
+                            Unpaid obligations
+                        </small>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            Budgeted
+                        </span>
+
+                        <strong>
+                            <?= money($totalBudget); ?>
+                        </strong>
+
+                        <small>
+                            Current month limits
                         </small>
 
                     </div>
@@ -342,32 +407,13 @@
                         </span>
 
                         <strong>
-                            $174.22
+                            <?= money(
+                                $totalHabitSpending
+                            ); ?>
                         </strong>
 
                         <small>
                             Cannabis + Alcohol
-                        </small>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Cash Flow
-                        </span>
-
-                        <strong class="<?= $netCashFlow >= 0
-                            ? 'positive'
-                            : 'negative'; ?>"
-                        >
-                            <?= $netCashFlow >= 0 ? '+' : '-'; ?>
-                            <?= money(abs($netCashFlow)); ?>
-                        </strong>
-
-                        <small>
-                            Income minus spending
                         </small>
 
                     </div>

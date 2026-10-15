@@ -21,14 +21,15 @@
 
             </div>
 
+
             <div class="accounts-actions">
 
-                <button
+                <a
                     class="secondary-button"
-                    type="button"
+                    href="<?= e(url('account-form.php')); ?>"
                 >
                     Add Manual Account
-                </button>
+                </a>
 
                 <button
                     class="primary-button"
@@ -51,11 +52,11 @@
                 </span>
 
                 <strong>
-                    <?= money($cashTotal); ?>
+                    <?= money($totalCash); ?>
                 </strong>
 
                 <small>
-                    Across tracked cash accounts
+                    Accounts included in cash
                 </small>
 
             </article>
@@ -72,7 +73,7 @@
                 </strong>
 
                 <small>
-                    Linked and manual sources
+                    Active tracked accounts
                 </small>
 
             </article>
@@ -85,11 +86,28 @@
                 </span>
 
                 <strong>
-                    <?= money($cashTotal); ?>
+                    <?= money($totalAvailable); ?>
                 </strong>
 
                 <small>
-                    Currently available funds
+                    Included in safe-to-spend
+                </small>
+
+            </article>
+
+
+            <article>
+
+                <span>
+                    Net Worth Position
+                </span>
+
+                <strong>
+                    <?= money($totalNetWorth); ?>
+                </strong>
+
+                <small>
+                    Included in net worth
                 </small>
 
             </article>
@@ -113,131 +131,187 @@
 
                 </div>
 
-
-                <div class="account-filters">
-
-                    <button
-                        class="active"
-                        type="button"
-                    >
-                        All
-                    </button>
-
-                    <button type="button">
-                        Cash
-                    </button>
-
-                    <button type="button">
-                        Credit
-                    </button>
-
-                    <button type="button">
-                        Investments
-                    </button>
-
-                </div>
-
             </div>
 
 
-            <div class="accounts-table">
+            <?php if ($accounts === []): ?>
 
-                <div class="accounts-table-head">
+                <div class="accounts-empty">
 
-                    <span>
-                        Account
-                    </span>
+                    <strong>
+                        No accounts yet.
+                    </strong>
 
-                    <span>
-                        Source
-                    </span>
+                    <p>
+                        Add your first manual account
+                        to begin tracking real balances.
+                    </p>
 
-                    <span>
-                        Type
-                    </span>
-
-                    <span>
-                        Available
-                    </span>
-
-                    <span>
-                        Balance
-                    </span>
+                    <a
+                        class="primary-button"
+                        href="<?= e(url('account-form.php')); ?>"
+                    >
+                        Add Account
+                    </a>
 
                 </div>
 
+            <?php else: ?>
 
-                <?php foreach ($accounts as $account): ?>
+                <div class="accounts-table">
 
-                    <article class="accounts-table-row">
+                    <div class="accounts-table-head">
 
-                        <div class="account-name-cell">
+                        <span>Account</span>
+                        <span>Type</span>
+                        <span>Available</span>
+                        <span>Balance</span>
+                        <span>Actions</span>
 
-                            <span class="account-logo">
-                                <?= e($account['icon']); ?>
-                            </span>
+                    </div>
 
-                            <div>
+
+                    <?php foreach ($accounts as $account): ?>
+
+                        <article class="accounts-table-row">
+
+                            <div class="account-name-cell">
+
+                                <span class="account-logo">
+
+                                    <?= e(
+                                        strtoupper(
+                                            substr(
+                                                $account['account_name'],
+                                                0,
+                                                1
+                                            )
+                                        )
+                                    ); ?>
+
+                                </span>
+
+                                <div>
+
+                                    <strong>
+                                        <?= e($account['account_name']); ?>
+                                    </strong>
+
+                                    <small>
+
+                                        <?= e(
+                                            $account['institution_name']
+                                            ?? 'Manual Account'
+                                        ); ?>
+
+                                        <?php if (
+                                            !empty($account['last4'])
+                                        ): ?>
+
+                                            ****<?= e($account['last4']); ?>
+
+                                        <?php endif; ?>
+
+                                    </small>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="account-type-cell">
 
                                 <strong>
-                                    <?= e($account['name']); ?>
+                                    <?= e(
+                                        ucfirst(
+                                            $account['account_type']
+                                        )
+                                    ); ?>
                                 </strong>
 
                                 <small>
-                                    <?= e($account['institution']); ?>
-
-                                    <?php if ($account['last4'] !== ''): ?>
-                                        ****<?= e($account['last4']); ?>
-                                    <?php endif; ?>
+                                    <?= e(
+                                        ucfirst(
+                                            $account['source_type']
+                                        )
+                                    ); ?>
                                 </small>
 
                             </div>
 
-                        </div>
 
+                            <div class="account-money-cell">
 
-                        <div>
-
-                            <span class="source-badge">
-                                <?= e($account['source']); ?>
-                            </span>
-
-                        </div>
-
-
-                        <div class="account-type-cell">
-
-                            <strong>
-                                <?= e($account['type']); ?>
-                            </strong>
-
-                        </div>
-
-
-                        <div class="account-money-cell">
-
-                            <?= money(
-                                (float) $account['available']
-                            ); ?>
-
-                        </div>
-
-
-                        <div class="account-money-cell">
-
-                            <strong>
                                 <?= money(
-                                    (float) $account['balance']
+                                    (float) $account[
+                                        'balance_available'
+                                    ]
                                 ); ?>
-                            </strong>
 
-                        </div>
+                            </div>
 
-                    </article>
 
-                <?php endforeach; ?>
+                            <div class="account-money-cell">
 
-            </div>
+                                <strong>
+                                    <?= money(
+                                        (float) $account[
+                                            'balance_current'
+                                        ]
+                                    ); ?>
+                                </strong>
+
+                            </div>
+
+
+                            <div class="account-actions-cell">
+
+                                <a
+                                    href="<?= e(
+                                        url(
+                                            'account-form.php?id='
+                                            . $account['id']
+                                        )
+                                    ); ?>"
+                                >
+                                    Edit
+                                </a>
+
+
+                                <form
+                                    method="post"
+                                    action="<?= e(
+                                        url('account-archive.php')
+                                    ); ?>"
+                                >
+
+                                    <input
+                                        type="hidden"
+                                        name="csrf_token"
+                                        value="<?= e(csrf_token()); ?>"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="account_id"
+                                        value="<?= (int) $account['id']; ?>"
+                                    >
+
+                                    <button type="submit">
+                                        Archive
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </article>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php endif; ?>
 
         </section>
 
