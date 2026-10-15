@@ -111,6 +111,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_POST['is_recurring']
         ) ? 1 : 0;
 
+        $saveRule = isset(
+            $_POST['save_rule']
+        );
+
+        $ruleMatchValue = trim(
+            (string) (
+                $_POST['rule_match_value']
+                ?? ''
+            )
+        );
+
         $isTransfer = in_array(
             $type,
             [
@@ -127,11 +138,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'transfer_in',
         ];
 
-        $validStatuses = [
-            'posted',
-            'pending',
-        ];
-
         if (
             !in_array(
                 $type,
@@ -141,17 +147,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ) {
             $errorMessage =
                 'Choose a valid transaction type.';
-        }
-
-        if (
-            !in_array(
-                $status,
-                $validStatuses,
-                true
-            )
-        ) {
-            $errorMessage =
-                'Choose a valid transaction status.';
         }
 
         $stmt = db()->prepare(
@@ -211,18 +206,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             try {
                 if ($transactionId > 0) {
-                    $oldAmount = (float) $transaction['amount'];
+                    $oldEffect =
+                        transaction_balance_effect(
+                            (float) $transaction['amount'],
+                            (string) $transaction[
+                                'transaction_status'
+                            ]
+                        );
 
-                    $oldEffect = transaction_balance_effect(
-                        $oldAmount,
-                        (string) $transaction[
-                            'transaction_status'
-                        ]
-                    );
-
-                    /*
-                     * Reverse the old manual-account effect.
-                     */
                     adjust_manual_account_balance(
                         $pdo,
                         $userId,
@@ -243,6 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             amount = :amount,
                             is_transfer = :is_transfer,
                             is_recurring = :is_recurring,
+                            needs_review = 0,
                             notes = :notes
                         WHERE id = :id
                           AND user_id = :user_id
@@ -273,12 +265,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             account_id,
                             transaction_date,
                             description,
+                            raw_description,
                             category,
                             transaction_type,
                             transaction_status,
                             amount,
                             is_transfer,
                             is_recurring,
+                            needs_review,
                             notes
                         )
                         VALUES (
@@ -286,12 +280,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             :account_id,
                             :transaction_date,
                             :description,
+                            :description,
                             :category,
                             :transaction_type,
                             :transaction_status,
                             :amount,
                             :is_transfer,
                             :is_recurring,
+                            0,
                             :notes
                         )
                         '
@@ -314,10 +310,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 }
 
-                $newEffect = transaction_balance_effect(
-                    $amount,
-                    $status
-                );
+                $newEffect =
+                    transaction_balance_effect(
+                        $amount,
+                        $status
+                    );
 
                 adjust_manual_account_balance(
                     $pdo,
@@ -325,6 +322,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $accountId,
                     $newEffect
                 );
+
+                if (
+                    $saveRule &&
+                    $ruleMatchValue !== ''
+                ) {
+                    $stmt = $pdo->prepare(
+                        '
+                        INSERT INTO transaction_rules (
+                            user_id,
+                            match_value,
+                            display_name,
+                            category,
+                            priority,
+                            enabled
+                        )
+                        VALUES (
+                            :user_id,
+                            :match_value,
+                            :display_name,
+                            :category,
+                            100,
+                            1
+                        )
+                        '
+                    );
+
+                    $stmt->execute([
+                        'user_id' => $userId,
+                        'match_value' => $ruleMatchValue,
+                        'display_name' => $description,
+                        'category' => $category,
+                    ]);
+                }
 
                 $pdo->commit();
 

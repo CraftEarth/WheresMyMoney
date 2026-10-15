@@ -14,3 +14,5 @@ require_once APP_ROOT . '/includes/functions.php';
 require_once APP_ROOT . '/includes/database.php';
 require_once APP_ROOT . '/includes/auth.php';
 require_once APP_ROOT . '/includes/ledger.php';
+
+require_once APP_ROOT . '/includes/normalization.php';

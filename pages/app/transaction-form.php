@@ -326,6 +326,60 @@
                 </label>
 
 
+                <?php if ($transactionId > 0): ?>
+
+                    <div class="save-rule-box">
+
+                        <label class="settings-toggle-row">
+
+                            <div>
+
+                                <strong>
+                                    Remember this correction
+                                </strong>
+
+                                <small>
+                                    Create a rule so future matching
+                                    transactions use this name and category.
+                                </small>
+
+                            </div>
+
+                            <input
+                                type="checkbox"
+                                name="save_rule"
+                                value="1"
+                            >
+
+                        </label>
+
+
+                        <label class="rule-match-field">
+
+                            <span>
+                                Match future descriptions containing
+                            </span>
+
+                            <input
+                                type="text"
+                                name="rule_match_value"
+                                value="<?= e(
+                                    $transaction[
+                                        'raw_description'
+                                    ]
+                                    ?: $transaction[
+                                        'description'
+                                    ]
+                                ); ?>"
+                            >
+
+                        </label>
+
+                    </div>
+
+                <?php endif; ?>
+
+
                 <div class="account-form-actions">
 
                     <a
@@ -355,3 +409,4 @@
     </main>
 
 </div>
+

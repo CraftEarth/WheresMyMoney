@@ -24,12 +24,48 @@
 
             <div class="transactions-actions">
 
-                <button
+                <a
                     class="secondary-button"
-                    type="button"
+                    href="<?= e(
+                        url('transaction-rules.php')
+                    ); ?>"
+                >
+                    Rules
+                </a>
+
+                <a
+                    class="secondary-button"
+                    href="<?= e(
+                        url('transaction-import.php')
+                    ); ?>"
                 >
                     Import
-                </button>
+                </a>
+
+                <form
+                    method="post"
+                    action="<?= e(
+                        url('apply-transaction-rules.php')
+                    ); ?>"
+                    class="inline-action-form"
+                >
+
+                    <input
+                        type="hidden"
+                        name="csrf_token"
+                        value="<?= e(
+                            csrf_token()
+                        ); ?>"
+                    >
+
+                    <button
+                        class="secondary-button"
+                        type="submit"
+                    >
+                        Apply Rules
+                    </button>
+
+                </form>
 
                 <a
                     class="primary-button"
@@ -43,6 +79,34 @@
             </div>
 
         </header>
+
+
+        <?php if ($needsReviewCount > 0): ?>
+
+            <div class="review-summary">
+
+                <strong>
+                    <?= $needsReviewCount; ?>
+                    transaction<?= $needsReviewCount === 1 ? '' : 's'; ?>
+                    need review.
+                </strong>
+
+                <span>
+                    Edit each one to confirm its name and category.
+                </span>
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <?php if ($rulesMessage !== null): ?>
+
+            <div class="settings-message success-message">
+                <?= e($rulesMessage); ?>
+            </div>
+
+        <?php endif; ?>
 
 
         <section class="transaction-summary-grid">
@@ -357,3 +421,8 @@
     </main>
 
 </div>
+
+
+
+
+

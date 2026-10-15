@@ -12,6 +12,16 @@ $activePage = 'transactions';
 
 $userId = current_user_id();
 
+$rulesMessage = $_SESSION[
+    'rules_applied_message'
+] ?? null;
+
+unset(
+    $_SESSION[
+        'rules_applied_message'
+    ]
+);
+
 $stmt = db()->prepare(
     '
     SELECT
@@ -38,8 +48,15 @@ $transactions = $stmt->fetchAll();
 $totalIncome = 0.00;
 $totalExpenses = 0.00;
 $totalTransfers = 0.00;
+$needsReviewCount = 0;
 
 foreach ($transactions as $transaction) {
+    if (
+        (int) $transaction['needs_review']
+        === 1
+    ) {
+        $needsReviewCount++;
+    }
     $amount = (float) $transaction['amount'];
 
     if (
@@ -65,3 +82,5 @@ require_once APP_ROOT . '/includes/header.php';
 require_once APP_ROOT . '/includes/app-nav.php';
 require_once APP_ROOT . '/pages/app/transactions.php';
 require_once APP_ROOT . '/includes/footer.php';
+
+
