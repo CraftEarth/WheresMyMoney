@@ -1,67 +1,211 @@
-<div class="app-layout">
+<?php
 
-    <main class="app-main">
+function dashboard_icon(
+    string $name,
+    string $class = ''
+): string {
 
-        <header class="app-topbar">
+    $icons = [
 
-            <div>
+        'wallet' => '
+            <path d="M4 7h15a2 2 0 0 1 2 2v10H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12"/>
+            <path d="M16 11h5v5h-5a2.5 2.5 0 0 1 0-5Z"/>
+        ',
 
-                <p class="app-greeting">
-                    Welcome back,
-                    <?= e(
-                        $user['display_name']
-                        ?? 'User'
-                    ); ?>
-                </p>
+        'income' => '
+            <path d="M12 20V5"/>
+            <path d="m6 11 6-6 6 6"/>
+        ',
+
+        'expense' => '
+            <path d="M12 4v15"/>
+            <path d="m18 13-6 6-6-6"/>
+        ',
+
+        'calendar' => '
+            <rect x="3" y="5" width="18" height="16" rx="2"/>
+            <path d="M16 3v4M8 3v4M3 10h18"/>
+        ',
+
+        'shield-check' => '
+            <path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>
+            <path d="m8.5 12 2.2 2.2 4.8-5"/>
+        ',
+
+        'trend' => '
+            <path d="m4 17 5-5 4 3 7-8"/>
+            <path d="M15 7h5v5"/>
+        ',
+
+        'pie' => '
+            <path d="M11 3a9 9 0 1 0 9 9h-9z"/>
+            <path d="M14 3.5V9h5.5A8 8 0 0 0 14 3.5Z"/>
+        ',
+
+        'bitcoin' => '
+            <path d="M9 3v18M13 3v18"/>
+            <path d="M7 6h7a3 3 0 0 1 0 6H7"/>
+            <path d="M7 12h8a3 3 0 0 1 0 6H7"/>
+        ',
+
+        'card' => '
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="M3 10h18M7 15h4"/>
+        ',
+
+        'receipt' => '
+            <path d="M6 3h12v18l-2-1.4L14 21l-2-1.4L10 21l-2-1.4L6 21z"/>
+            <path d="M9 8h6M9 12h6M9 16h4"/>
+        ',
+
+        'transfer' => '
+            <path d="M4 8h13"/>
+            <path d="m14 5 3 3-3 3"/>
+            <path d="M20 16H7"/>
+            <path d="m10 13-3 3 3 3"/>
+        ',
+
+        'person' => '
+            <circle cx="12" cy="8" r="3"/>
+            <path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"/>
+        ',
+
+        'fuel' => '
+            <path d="M5 21V4h10v17"/>
+            <path d="M4 21h12"/>
+            <path d="M8 8h4"/>
+            <path d="M15 7h2l3 3v7a2 2 0 0 1-4 0v-4"/>
+        ',
+
+        'chart' => '
+            <path d="M5 20V11M12 20V5M19 20v-8"/>
+        ',
+
+        'spark' => '
+            <path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
+            <path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>
+        ',
+
+        'sync' => '
+            <path d="M20 7v5h-5"/>
+            <path d="M4 17v-5h5"/>
+            <path d="M6.5 8a7 7 0 0 1 11.7-2L20 8"/>
+            <path d="M17.5 16a7 7 0 0 1-11.7 2L4 16"/>
+        ',
+
+    ];
+
+    $body = $icons[$name] ?? '';
+
+    return '
+        <svg
+            class="wm-svg-icon ' . e($class) . '"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+        >
+            ' . $body . '
+        </svg>
+    ';
+}
+?>
+<?php
+
+$positiveTransactions = array_values(
+    array_filter(
+        $recentTransactions,
+        static function (array $transaction): bool {
+            return (float) ($transaction['amount'] ?? 0) > 0;
+        }
+    )
+);
+
+$positiveTransactions = array_slice(
+    $positiveTransactions,
+    0,
+    3
+);
+
+$positiveTotal = 0.00;
+
+foreach ($positiveTransactions as $transaction) {
+    $positiveTotal += (float) $transaction['amount'];
+}
+
+$displayName = trim(
+    (string) (
+        $user['display_name']
+        ?? 'User'
+    )
+);
+
+$firstName = explode(
+    ' ',
+    $displayName
+)[0] ?? $displayName;
+
+$initial = strtoupper(
+    substr(
+        $displayName,
+        0,
+        1
+    )
+);
+?>
+
+<div class="app-layout dashboard-v2">
+
+    <main class="app-main wm-dashboard">
+
+        <header class="wm-topbar">
+
+            <div class="wm-topbar-copy">
 
                 <h1>
-                    Here's where your money stands.
+                    Good evening,
+                    <?= e($firstName); ?>
                 </h1>
+
+                <p>
+                    Here's where your money stands today.
+                </p>
 
             </div>
 
 
-            <div class="app-topbar-actions">
+            <div class="wm-topbar-actions">
 
-                <label class="app-search">
-
-                    <button
-    type="button"
-    id="dashboard-plaid-sync"
-    class="primary-button"
-    style="white-space: nowrap;"
->
-    ? Sync Now
-</button>
-
-<div
-    id="dashboard-sync-status"
-    style="
-        font-size: 12px;
-        color: #667085;
-        white-space: nowrap;
-    "
-></div>
-<input
-                        type="search"
-                        placeholder="Search transactions..."
-                    >
-
-                </label>
-
-                <div class="user-avatar">
+                <div class="wm-date">
+                    <span>?</span>
 
                     <?= e(
-                        strtoupper(
-                            substr(
-                                $user['display_name']
-                                ?? 'U',
-                                0,
-                                1
-                            )
+                        date(
+                            'l, M j, Y'
                         )
                     ); ?>
+                </div>
 
+
+                <button
+                    type="button"
+                    id="dashboard-plaid-sync"
+                    class="wm-button wm-button-primary"
+                >
+                    ? Sync Now
+                </button>
+
+
+                <a
+                    href="<?= e(
+                        url('link-account.php')
+                    ); ?>"
+                    class="wm-button wm-button-light"
+                >
+                    + Add Account
+                </a>
+
+
+                <div class="wm-user-avatar">
+                    <?= e($initial); ?>
                 </div>
 
             </div>
@@ -69,505 +213,358 @@
         </header>
 
 
-        <section class="summary-grid">
+        <section class="wm-summary-grid">
 
-            <article class="summary-card">
+            <article
+                class="wm-summary-card <?= ((float) $summary['cash'] >= (float) $summary['bills']) ? 'wm-state-success' : 'wm-state-danger'; ?>"
+                data-dashboard-metric="cash"
+            >
 
-                <span>
-                    Total Cash
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Total Cash</span>
+                </div>
 
                 <strong>
-                    <?= money($summary['cash']); ?>
+                    <?= money(
+                        (float) $summary['cash']
+                    ); ?>
                 </strong>
 
                 <small>
-                    Current account balances
+                    Available across cash accounts
                 </small>
+
+                <div class="wm-mini-line wm-line-red"></div>
 
             </article>
 
 
-            <article class="summary-card">
+            <article
+                class="wm-summary-card <?= ((float) $summary['income'] > 0) ? 'wm-state-success' : 'wm-state-danger'; ?>"
+                data-dashboard-metric="income"
+            >
 
-                <span>
-                    Monthly Income
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Money In This Month</span>
+                </div>
 
                 <strong>
-                    <?= money($summary['income']); ?>
+                    <?= money(
+                        (float) $summary['income']
+                    ); ?>
                 </strong>
 
                 <small>
-                    Posted income this month
+                    Posted incoming money
                 </small>
+
+                <div class="wm-mini-line wm-line-green"></div>
 
             </article>
 
 
-            <article class="summary-card">
+            <article
+                class="wm-summary-card <?= ((float) $summary['spent'] <= (float) $summary['income']) ? 'wm-state-success' : 'wm-state-danger'; ?>"
+                data-dashboard-metric="spending"
+            >
 
-                <span>
-                    Monthly Spending
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Money Out This Month</span>
+                </div>
 
                 <strong>
-                    <?= money($summary['spent']); ?>
+                    <?= money(
+                        (float) $summary['spent']
+                    ); ?>
                 </strong>
 
                 <small>
                     Transfers excluded
                 </small>
 
+                <div class="wm-mini-line wm-line-red"></div>
+
             </article>
 
 
-            <article class="summary-card">
+            <article
+                class="wm-summary-card <?= ((float) $summary['cash'] >= (float) $summary['bills']) ? 'wm-state-success' : 'wm-state-warning'; ?>"
+                data-dashboard-metric="bills"
+            >
 
-                <span>
-                    Upcoming Bills
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Upcoming Bills</span>
+                </div>
 
                 <strong>
-                    <?= money($summary['bills']); ?>
+                    <?= money(
+                        (float) $summary['bills']
+                    ); ?>
                 </strong>
 
                 <small>
-                    Unpaid tracked obligations
+                    Known unpaid obligations
                 </small>
 
             </article>
 
 
             <article
-                class="summary-card summary-card-safe"
+                class="wm-summary-card <?= ((float) $summary['safe_to_spend'] > 0) ? 'wm-state-success' : 'wm-state-danger'; ?>"
+                data-dashboard-metric="safe"
             >
 
-                <span>
-                    Safe to Spend
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Safe to Spend</span>
+                </div>
 
                 <strong>
                     <?= money(
-                        $summary['safe_to_spend']
+                        (float) $summary[
+                            'safe_to_spend'
+                        ]
                     ); ?>
                 </strong>
 
                 <small>
-                    Available cash before upcoming bills
+                    After upcoming bills
                 </small>
 
             </article>
 
 
-            <article class="summary-card">
+            <article
+                class="wm-summary-card <?= ((float) $summary['net_worth'] > 0) ? 'wm-state-success' : 'wm-state-danger'; ?>"
+                data-dashboard-metric="net-worth"
+            >
 
-                <span>
-                    Net Worth
-                </span>
+                <div class="wm-summary-head">
+                    <span class="wm-summary-icon">?</span>
+                    <span>Net Worth</span>
+                </div>
 
                 <strong>
-                    <?= money($summary['net_worth']); ?>
+                    <?= money(
+                        (float) $summary[
+                            'net_worth'
+                        ]
+                    ); ?>
                 </strong>
 
                 <small>
-                    Included tracked accounts
+                    Assets minus liabilities
                 </small>
 
+                <div class="wm-mini-line wm-line-green"></div>
+
             </article>
 
-        
-            <section class="money-allocation">
-
-    <div class="money-allocation-heading">
-
-        <div>
-            <small>
-                YOUR MONEY
-            </small>
-
-            <h2>
-                Money Allocation
-            </h2>
-        </div>
-
-        <a href="<?= e(url('reports.php')); ?>">
-            View Reports
-        </a>
-
-    </div>
+        </section>
 
 
-    <div class="money-allocation-grid">
+        <section class="wm-allocation">
 
-        <a
-            class="money-allocation-item"
-            href="<?= e(url('accounts.php')); ?>"
-        >
+            <div class="wm-section-heading">
 
-            <span>
-                Cash
-            </span>
+                <div>
+                    <h2>
+                        ? Money Allocation
+                    </h2>
 
-            <strong>
-                <?= money(
-                    (float) $summary['cash']
-                ); ?>
-            </strong>
+                    <p>
+                        How your money is distributed
+                    </p>
+                </div>
 
-            <small>
-                <?= number_format(
-                    (float) $summary[
-                        'cash_percent'
-                    ],
-                    1
-                ); ?>% of net worth
-            </small>
+                <a href="<?= e(
+                    url('reports.php')
+                ); ?>">
+                    View Detailed Report ?
+                </a>
 
-        </a>
+            </div>
 
 
-        <a
-            class="money-allocation-item"
-            href="<?= e(url('crypto.php')); ?>"
-        >
+            <div class="wm-allocation-grid">
 
-            <span>
-                Crypto
-            </span>
-
-            <strong>
-                <?= money(
-                    (float) $summary['crypto']
-                ); ?>
-            </strong>
-
-            <small>
-                <?= number_format(
-                    (float) $summary[
-                        'crypto_percent'
-                    ],
-                    1
-                ); ?>% of net worth
-            </small>
-
-        </a>
-
-
-        <a
-            class="money-allocation-item"
-            href="<?= e(url('accounts.php')); ?>"
-        >
-
-            <span>
-                Debt
-            </span>
-
-            <strong>
-                <?= money(
-                    (float) $summary['debt']
-                ); ?>
-            </strong>
-
-            <small>
-                Current liabilities
-            </small>
-
-        </a>
-
-
-        <a
-            class="money-allocation-item"
-            href="<?= e(url('bills.php')); ?>"
-        >
-
-            <span>
-                Bills
-            </span>
-
-            <strong>
-                <?= money(
-                    (float) $summary['bills']
-                ); ?>
-            </strong>
-
-            <small>
-                Upcoming obligations
-            </small>
-
-        </a>
-
-
-        <a
-            class="money-allocation-item money-allocation-net-worth"
-            href="<?= e(url('reports.php')); ?>"
-        >
-
-            <span>
-                Net Worth
-            </span>
-
-            <strong>
-                <?= money(
-                    (float) $summary[
-                        'net_worth'
-                    ]
-                ); ?>
-            </strong>
-
-            <small>
-                Assets minus liabilities
-            </small>
-
-        </a>
-
-    </div>
-
-</section>
-</section>
-
-
-        <section
-            class="dashboard-grid dashboard-grid-main"
-        >
-
-            <article class="dashboard-card">
-
-                <div class="card-heading">
-
-                    <div>
-                        <small>Your money</small>
-                        <h2>Accounts</h2>
-                    </div>
-
-                    <a href="<?= e(
+                <a
+                    href="<?= e(
                         url('accounts.php')
-                    ); ?>">
-                        View All
-                    </a>
+                    ); ?>"
+                    class="wm-allocation-cell wm-allocation-cash"
+                >
 
-                </div>
-
-
-                <?php if ($accounts === []): ?>
-
-                    <div class="dashboard-empty">
-                        No accounts yet.
-                    </div>
-
-                <?php else: ?>
-
-                    <div class="account-list">
-
-                        <?php foreach (
-                            $accounts as $account
-                        ): ?>
-
-                            <div class="account-row">
-
-                                <div class="account-icon">
-
-                                    <?= e(
-                                        strtoupper(
-                                            substr(
-                                                $account[
-                                                    'account_name'
-                                                ],
-                                                0,
-                                                1
-                                            )
-                                        )
-                                    ); ?>
-
-                                </div>
-
-
-                                <div class="account-copy">
-
-                                    <strong>
-                                        <?= e(
-                                            $account[
-                                                'account_name'
-                                            ]
-                                        ); ?>
-                                    </strong>
-
-                                    <small>
-
-                                        <?= e(
-                                            ucfirst(
-                                                $account[
-                                                    'account_type'
-                                                ]
-                                            )
-                                        ); ?>
-
-                                        <?php if (
-                                            !empty(
-                                                $account['last4']
-                                            )
-                                        ): ?>
-
-                                            ****<?= e(
-                                                $account['last4']
-                                            ); ?>
-
-                                        <?php endif; ?>
-
-                                    </small>
-
-                                </div>
-
-
-                                <strong>
-                                    <?= money(
-                                        (float) $account[
-                                            'balance_current'
-                                        ]
-                                    ); ?>
-                                </strong>
-
-                            </div>
-
-                        <?php endforeach; ?>
-
-                    </div>
-
-                <?php endif; ?>
-
-            </article>
-
-
-            <article class="dashboard-card">
-
-                <div class="card-heading">
+                    <span class="wm-allocation-icon">
+                        $
+                    </span>
 
                     <div>
-                        <small>Latest activity</small>
-                        <h2>Recent Transactions</h2>
+                        <small>Cash</small>
+
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'cash'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <p>
+                            <?= number_format(
+                                (float) $summary[
+                                    'cash_percent'
+                                ],
+                                1
+                            ); ?>% of net worth
+                        </p>
                     </div>
 
-                    <a href="<?= e(
-                        url('transactions.php')
-                    ); ?>">
-                        View All
-                    </a>
-
-                </div>
+                </a>
 
 
-                <?php if (
-                    $recentTransactions === []
-                ): ?>
+                <a
+                    href="<?= e(
+                        url('crypto.php')
+                    ); ?>"
+                    class="wm-allocation-cell wm-allocation-crypto"
+                >
 
-                    <div class="dashboard-empty">
-                        No transactions yet.
-                    </div>
-
-                <?php else: ?>
-
-                    <div class="transaction-list">
-
-                        <?php foreach (
-                            $recentTransactions
-                            as $transaction
-                        ): ?>
-
-                            <div class="transaction-row">
-
-                                <div class="transaction-date">
-
-                                    <?= e(
-                                        date(
-                                            'M j',
-                                            strtotime(
-                                                $transaction[
-                                                    'transaction_date'
-                                                ]
-                                            )
-                                        )
-                                    ); ?>
-
-                                </div>
-
-
-                                <div class="transaction-copy">
-
-                                    <strong>
-                                        <?= e(
-                                            $transaction[
-                                                'description'
-                                            ]
-                                        ); ?>
-                                    </strong>
-
-                                    <small>
-
-                                        <?= e(
-                                            $transaction[
-                                                'category'
-                                            ]
-                                        ); ?>
-
-                                        -
-                                        <?= e(
-                                            $transaction[
-                                                'account_name'
-                                            ]
-                                        ); ?>
-
-                                    </small>
-
-                                </div>
-
-
-                                <strong
-                                    class="<?= (
-                                        (float) $transaction[
-                                            'amount'
-                                        ] >= 0
-                                    )
-                                        ? 'positive'
-                                        : 'negative'; ?>"
-                                >
-
-                                    <?= (
-                                        (float) $transaction[
-                                            'amount'
-                                        ] >= 0
-                                    )
-                                        ? '+'
-                                        : '-'; ?>
-
-                                    <?= money(
-                                        abs(
-                                            (float) $transaction[
-                                                'amount'
-                                            ]
-                                        )
-                                    ); ?>
-
-                                </strong>
-
-                            </div>
-
-                        <?php endforeach; ?>
-
-                    </div>
-
-                <?php endif; ?>
-
-            </article>
-
-
-            <article class="dashboard-card">
-
-                <div class="card-heading">
+                    <span class="wm-allocation-icon">
+                        ?
+                    </span>
 
                     <div>
-                        <small>What's next</small>
-                        <h2>Upcoming Bills</h2>
+                        <small>Crypto</small>
+
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'crypto'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <p>
+                            <?= number_format(
+                                (float) $summary[
+                                    'crypto_percent'
+                                ],
+                                1
+                            ); ?>% of net worth
+                        </p>
                     </div>
+
+                </a>
+
+
+                <a
+                    href="<?= e(
+                        url('accounts.php')
+                    ); ?>"
+                    class="wm-allocation-cell wm-allocation-debt"
+                >
+
+                    <span class="wm-allocation-icon">
+                        -
+                    </span>
+
+                    <div>
+                        <small>Debt</small>
+
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'debt'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <p>
+                            Current liabilities
+                        </p>
+                    </div>
+
+                </a>
+
+
+                <a
+                    href="<?= e(
+                        url('bills.php')
+                    ); ?>"
+                    class="wm-allocation-cell wm-allocation-bills"
+                >
+
+                    <span class="wm-allocation-icon">
+                        ?
+                    </span>
+
+                    <div>
+                        <small>Bills</small>
+
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'bills'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <p>
+                            Upcoming obligations
+                        </p>
+                    </div>
+
+                </a>
+
+
+                <a
+                    href="<?= e(
+                        url('reports.php')
+                    ); ?>"
+                    class="wm-allocation-cell wm-allocation-worth"
+                >
+
+                    <span class="wm-allocation-icon">
+                        ?
+                    </span>
+
+                    <div>
+                        <small>Net Worth</small>
+
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'net_worth'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <p>
+                            Assets minus liabilities
+                        </p>
+                    </div>
+
+                </a>
+
+            </div>
+
+        </section>
+
+
+        <section class="wm-main-grid">
+
+            <article class="wm-panel">
+
+                <div class="wm-panel-heading">
+
+                    <h2>
+                        ? Upcoming Bills
+                    </h2>
 
                     <a href="<?= e(
                         url('bills.php')
@@ -578,27 +575,37 @@
                 </div>
 
 
-                <?php if ($dashboardBills === []): ?>
+                <div class="wm-list">
 
-                    <div class="dashboard-empty">
-                        No upcoming bills.
-                    </div>
+                    <?php if (
+                        $dashboardBills === []
+                    ): ?>
 
-                <?php else: ?>
+                        <div class="wm-empty">
+                            No upcoming bills.
+                        </div>
 
-                    <div class="bill-list">
+                    <?php else: ?>
 
                         <?php foreach (
                             $dashboardBills as $bill
                         ): ?>
 
-                            <div class="bill-row">
+                            <div class="wm-list-row">
 
-                                <div>
+                                <div
+                                    class="wm-row-icon wm-row-icon-warning"
+                                >
+                                    ?
+                                </div>
+
+                                <div class="wm-row-copy">
 
                                     <strong>
                                         <?= e(
-                                            $bill['bill_name']
+                                            $bill[
+                                                'bill_name'
+                                            ]
                                         ); ?>
                                     </strong>
 
@@ -618,7 +625,8 @@
 
                                 </div>
 
-                                <div class="bill-meta">
+
+                                <div class="wm-row-end">
 
                                     <strong>
                                         <?= money(
@@ -628,7 +636,18 @@
                                         ); ?>
                                     </strong>
 
-                                    <span>
+                                    <span
+                                        class="wm-pill <?= (
+                                            $bill[
+                                                'bill_status'
+                                            ] === 'due_soon' ||
+                                            $bill[
+                                                'bill_status'
+                                            ] === 'overdue'
+                                        )
+                                            ? 'wm-pill-danger'
+                                            : ''; ?>"
+                                    >
                                         <?= e(
                                             ucwords(
                                                 str_replace(
@@ -648,249 +667,325 @@
 
                         <?php endforeach; ?>
 
+                    <?php endif; ?>
+
+                </div>
+
+            </article>
+
+
+            <article class="wm-panel wm-transactions-panel">
+
+                <div class="wm-panel-heading">
+
+                    <h2>
+                        ? Recent Transactions
+                    </h2>
+
+                    <a href="<?= e(
+                        url('transactions.php')
+                    ); ?>">
+                        View All
+                    </a>
+
+                </div>
+
+
+                <div class="wm-list">
+
+                    <?php foreach (
+                        $recentTransactions as $transaction
+                    ): ?>
+
+                        <?php
+                        $transactionAmount =
+                            (float) (
+                                $transaction[
+                                    'amount'
+                                ]
+                                ?? 0
+                            );
+                        ?>
+
+                        <div class="wm-list-row">
+
+                            <div class="wm-date-column">
+
+                                <?= e(
+                                    date(
+                                        'M j',
+                                        strtotime(
+                                            $transaction[
+                                                'transaction_date'
+                                            ]
+                                        )
+                                    )
+                                ); ?>
+
+                            </div>
+
+
+                            <div
+                                class="wm-row-icon <?= (
+                                    $transactionAmount >= 0
+                                )
+                                    ? 'wm-row-icon-success'
+                                    : 'wm-row-icon-blue'; ?>"
+                            >
+                                <?= (
+                                    $transactionAmount >= 0
+                                )
+                                    ? '?'
+                                    : '?'; ?>
+                            </div>
+
+
+                            <div class="wm-row-copy">
+
+                                <strong>
+                                    <?= e(
+                                        $transaction[
+                                            'description'
+                                        ]
+                                    ); ?>
+                                </strong>
+
+                                <small>
+                                    <?= e(
+                                        $transaction[
+                                            'category'
+                                        ]
+                                    ); ?>
+                                    •
+                                    <?= e(
+                                        $transaction[
+                                            'account_name'
+                                        ]
+                                    ); ?>
+                                </small>
+
+                            </div>
+
+
+                            <strong
+                                class="wm-transaction-amount <?= (
+                                    $transactionAmount >= 0
+                                )
+                                    ? 'positive'
+                                    : 'negative'; ?>"
+                            >
+                                <?= (
+                                    $transactionAmount >= 0
+                                )
+                                    ? '+ '
+                                    : '- '; ?>
+
+                                <?= money(
+                                    abs(
+                                        $transactionAmount
+                                    )
+                                ); ?>
+                            </strong>
+
+                        </div>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            </article>
+
+
+            <article class="wm-panel wm-gains-panel">
+
+                <div class="wm-panel-heading">
+
+                    <h2>
+                        ? Gains
+                    </h2>
+
+                    <span class="wm-time-pill">
+                        Recent
+                    </span>
+
+                </div>
+
+
+                <div class="wm-gains-summary">
+
+                    <small>
+                        Positive movements
+                    </small>
+
+                    <strong>
+                        + <?= money(
+                            $positiveTotal
+                        ); ?>
+                    </strong>
+
+                    <div class="wm-gains-chart">
+                        <span></span>
                     </div>
 
-                <?php endif; ?>
+                </div>
+
+
+                <h3>
+                    Top Positive Movements
+                </h3>
+
+
+                <div class="wm-gain-list">
+
+                    <?php if (
+                        $positiveTransactions === []
+                    ): ?>
+
+                        <div class="wm-empty">
+                            No positive movements yet.
+                        </div>
+
+                    <?php else: ?>
+
+                        <?php foreach (
+                            $positiveTransactions
+                            as $transaction
+                        ): ?>
+
+                            <div class="wm-gain-row">
+
+                                <div
+                                    class="wm-row-icon wm-row-icon-success"
+                                >
+                                    ?
+                                </div>
+
+                                <div class="wm-row-copy">
+
+                                    <strong>
+                                        <?= e(
+                                            $transaction[
+                                                'description'
+                                            ]
+                                        ); ?>
+                                    </strong>
+
+                                    <small>
+                                        <?= e(
+                                            date(
+                                                'M j',
+                                                strtotime(
+                                                    $transaction[
+                                                        'transaction_date'
+                                                    ]
+                                                )
+                                            )
+                                        ); ?>
+                                        •
+                                        <?= e(
+                                            $transaction[
+                                                'category'
+                                            ]
+                                        ); ?>
+                                    </small>
+
+                                </div>
+
+                                <strong class="positive">
+                                    + <?= money(
+                                        (float) $transaction[
+                                            'amount'
+                                        ]
+                                    ); ?>
+                                </strong>
+
+                            </div>
+
+                        <?php endforeach; ?>
+
+                    <?php endif; ?>
+
+                </div>
 
             </article>
 
         </section>
 
 
-        <section
-            class="dashboard-grid dashboard-grid-bottom"
-        >
+        <section class="wm-bottom-grid">
 
-            <article class="dashboard-card">
+            <article class="wm-crypto-snapshot">
 
-                <div class="card-heading">
+                <div class="wm-crypto-head">
 
-                    <div>
-                        <small>This month</small>
-                        <h2>Gross Spending by Category</h2>
-                    </div>
+                    <h2>
+                        ? Crypto Snapshot
+                    </h2>
+
+                    <a href="<?= e(
+                        url('crypto.php')
+                    ); ?>">
+                        View All
+                    </a>
 
                 </div>
 
 
-                <?php if ($spending === []): ?>
+                <div class="wm-crypto-body">
 
-                    <div class="dashboard-empty">
-                        No expense data this month.
-                    </div>
+                    <div>
 
-                <?php else: ?>
+                        <small>
+                            Total Crypto Value
+                        </small>
 
-                    <div class="spending-list">
-
-                        <?php foreach (
-                            $spending as $item
-                        ): ?>
-
-                            <div class="spending-row">
-
-                                <div class="spending-row-head">
-
-                                    <span>
-                                        <?= e(
-                                            $item['name']
-                                        ); ?>
-                                    </span>
-
-                                    <strong>
-                                        <?= money(
-                                            (float) $item[
-                                                'amount'
-                                            ]
-                                        ); ?>
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="spending-track">
-
-                                    <span
-                                        style="width: <?= min(
-                                            100,
-                                            (int) $item[
-                                                'percent'
-                                            ]
-                                        ); ?>%;"
-                                    ></span>
-
-                                </div>
-
-
-                                <small>
-                                    <?= (int) $item[
-                                        'percent'
-                                    ]; ?>%
-                                    of tracked spending
-                                </small>
-
-                            </div>
-
-                        <?php endforeach; ?>
+                        <strong>
+                            <?= money(
+                                (float) $summary[
+                                    'crypto'
+                                ]
+                            ); ?>
+                        </strong>
 
                     </div>
 
-                <?php endif; ?>
+                    <div class="wm-crypto-line">
+                        <span></span>
+                    </div>
+
+                </div>
 
             </article>
 
 
-            <article class="dashboard-card">
+            <article class="wm-status-banner">
 
-                <div class="card-heading">
-
-                    <div>
-                        <small>Neutral insights</small>
-                        <h2>Habit Spending</h2>
-                    </div>
-
+                <div class="wm-status-icon">
+                    ??
                 </div>
 
-
-                <div class="habit-grid">
-
-                    <div>
-
-                        <span>
-                            Cannabis
-                        </span>
-
-                        <strong>
-                            <?= money(
-                                $habitSpending[
-                                    'Cannabis'
-                                ]
-                            ); ?>
-                        </strong>
-
-                        <small>
-                            This month
-                        </small>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Alcohol
-                        </span>
-
-                        <strong>
-                            <?= money(
-                                $habitSpending[
-                                    'Alcohol'
-                                ]
-                            ); ?>
-                        </strong>
-
-                        <small>
-                            This month
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <div class="insight-box">
+                <div class="wm-status-copy">
 
                     <strong>
-                        Spending insight
+                        Your money dashboard is live.
                     </strong>
 
-                    <p>
-                        Categories are tracked without judgment
-                        and reflect only the transactions
-                        you've recorded.
-                    </p>
-
-                </div>
-
-            </article>
-
-
-            <article class="dashboard-card">
-
-                <div class="card-heading">
-
-                    <div>
-                        <small>Financial position</small>
-                        <h2>Money Flow</h2>
-                    </div>
+                    <span>
+                        Accounts, bills, transactions and crypto
+                        are feeding the same picture.
+                    </span>
 
                 </div>
 
 
-                <div class="money-flow">
-
-                    <div>
-
-                        <span>
-                            Income
-                        </span>
-
-                        <strong class="positive">
-                            +<?= money(
-                                $summary['income']
-                            ); ?>
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Spending
-                        </span>
-
-                        <strong class="negative">
-                            -<?= money(
-                                $summary['spent']
-                            ); ?>
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Upcoming Bills
-                        </span>
-
-                        <strong>
-                            <?= money(
-                                $summary['bills']
-                            ); ?>
-                        </strong>
-
-                    </div>
-
-
-                    <div class="money-flow-highlight">
-
-                        <span>
-                            Safe to Spend
-                        </span>
-
-                        <strong>
-                            <?= money(
-                                $summary[
-                                    'safe_to_spend'
-                                ]
-                            ); ?>
-                        </strong>
-
-                    </div>
-
-                </div>
+                <a
+                    href="<?= e(
+                        url('reports.php')
+                    ); ?>"
+                    class="wm-status-button"
+                >
+                    ? View Full Report
+                </a>
 
             </article>
 
@@ -901,384 +996,87 @@
 </div>
 
 
-
-
 <script>
 (function () {
-    const dashboardPlaidSync =
+
+    const button =
         document.getElementById(
             'dashboard-plaid-sync'
         );
 
-    const syncStatus =
-        document.getElementById(
-            'dashboard-sync-status'
-        );
-
-    if (!dashboardPlaidSync) {
+    if (!button) {
         return;
     }
 
-    dashboardPlaidSync.addEventListener(
+    button.addEventListener(
         'click',
         async function () {
-            dashboardPlaidSync.disabled = true;
-            dashboardPlaidSync.textContent =
-                'Syncing...';
 
-            if (syncStatus) {
-                syncStatus.textContent =
-                    'Checking Plaid for updates...';
-            }
+            button.disabled = true;
+            button.textContent =
+                '? Syncing...';
 
             try {
-                const response = await fetch(
-                    '<?= e(url('plaid-sync.php')); ?>',
-                    {
-                        credentials: 'same-origin',
-                        cache: 'no-store'
-                    }
-                );
 
-                const result =
+                const response =
+                    await fetch(
+                        '<?= e(
+                            url(
+                                'plaid-sync.php'
+                            )
+                        ); ?>',
+                        {
+                            credentials:
+                                'same-origin',
+                            cache:
+                                'no-store'
+                        }
+                    );
+
+                const text =
                     await response.text();
 
-                if (!response.ok) {
+                if (
+                    !response.ok ||
+                    text
+                        .toLowerCase()
+                        .includes('error')
+                ) {
                     throw new Error(
-                        result ||
-                        'Plaid sync failed.'
+                        text ||
+                        'Sync failed.'
                     );
                 }
 
-                if (
-                    result.toLowerCase()
-                        .includes('error')
-                ) {
-                    throw new Error(result);
-                }
-
-                dashboardPlaidSync.textContent =
+                button.textContent =
                     '? Synced';
-
-                if (syncStatus) {
-                    syncStatus.textContent =
-                        'Sync complete. Refreshing...';
-                }
 
                 setTimeout(
                     function () {
-                        window.location.reload();
+                        window
+                            .location
+                            .reload();
                     },
-                    700
+                    500
                 );
 
             } catch (error) {
-                dashboardPlaidSync.disabled =
+
+                button.disabled =
                     false;
 
-                dashboardPlaidSync.textContent =
+                button.textContent =
                     '? Sync Now';
 
-                if (syncStatus) {
-                    syncStatus.textContent =
-                        'Sync failed: '
-                        + error.message;
-                }
+                alert(
+                    'Sync failed: '
+                    + error.message
+                );
             }
         }
     );
+
 })();
 </script>
-<!-- BEGIN DASHBOARD STATUS COLORS -->
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
 
-    function parseMoney(text) {
-
-        if (!text) {
-            return 0;
-        }
-
-        const cleaned = text
-            .replace(/[$,%+]/g, '')
-            .replace(/,/g, '')
-            .trim();
-
-        const value =
-            parseFloat(cleaned);
-
-        return Number.isFinite(value)
-            ? value
-            : 0;
-    }
-
-
-    /*
-     * Find the six top dashboard cards by their visible labels.
-     */
-    const topMetrics = {};
-
-    document
-        .querySelectorAll('article')
-        .forEach(function (card) {
-
-            const text =
-                card.innerText.trim();
-
-            [
-                'Total Cash',
-                'Monthly Income',
-                'Monthly Spending',
-                'Upcoming Bills',
-                'Safe to Spend',
-                'Net Worth'
-            ].forEach(function (label) {
-
-                if (
-                    text.startsWith(label)
-                ) {
-                    topMetrics[label] =
-                        card;
-                }
-            });
-        });
-
-
-    function cardValue(label) {
-
-        const card =
-            topMetrics[label];
-
-        if (!card) {
-            return 0;
-        }
-
-        const strong =
-            card.querySelector('strong');
-
-        return parseMoney(
-            strong
-                ? strong.textContent
-                : ''
-        );
-    }
-
-
-    const cash =
-        cardValue('Total Cash');
-
-    const income =
-        cardValue('Monthly Income');
-
-    const spending =
-        cardValue('Monthly Spending');
-
-    const bills =
-        cardValue('Upcoming Bills');
-
-    const safe =
-        cardValue('Safe to Spend');
-
-    const netWorth =
-        cardValue('Net Worth');
-
-
-    function setState(
-        element,
-        state
-    ) {
-
-        if (!element) {
-            return;
-        }
-
-        element.classList.remove(
-            'money-state-positive',
-            'money-state-negative',
-            'money-state-neutral'
-        );
-
-        element.classList.add(
-            'money-state-' + state
-        );
-    }
-
-
-    /*
-     * ========================================================
-     * TOP DASHBOARD RULES
-     * ========================================================
-     *
-     * Cash:
-     * green when current cash can cover upcoming bills.
-     *
-     * Income:
-     * green when income keeps pace with spending.
-     *
-     * Spending:
-     * green when spending <= income.
-     *
-     * Bills:
-     * green when current cash covers them.
-     *
-     * Safe to Spend:
-     * green only when something remains after obligations.
-     *
-     * Net Worth:
-     * green when positive.
-     */
-
-
-    setState(
-        topMetrics['Total Cash'],
-        cash >= bills
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    setState(
-        topMetrics['Monthly Income'],
-        income >= spending
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    setState(
-        topMetrics['Monthly Spending'],
-        spending <= income
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    setState(
-        topMetrics['Upcoming Bills'],
-        bills === 0 || cash >= bills
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    setState(
-        topMetrics['Safe to Spend'],
-        safe > 0
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    setState(
-        topMetrics['Net Worth'],
-        netWorth > 0
-            ? 'positive'
-            : 'negative'
-    );
-
-
-    /*
-     * ========================================================
-     * MONEY ALLOCATION
-     * ========================================================
-     */
-
-    document
-        .querySelectorAll(
-            '.money-allocation-item'
-        )
-        .forEach(function (item) {
-
-            const labelElement =
-                item.querySelector('span');
-
-            const valueElement =
-                item.querySelector('strong');
-
-            if (
-                !labelElement ||
-                !valueElement
-            ) {
-                return;
-            }
-
-            const label =
-                labelElement
-                    .textContent
-                    .trim();
-
-            const value =
-                parseMoney(
-                    valueElement.textContent
-                );
-
-
-            if (label === 'Cash') {
-
-                setState(
-                    item,
-                    cash >= bills
-                        ? 'positive'
-                        : 'negative'
-                );
-
-                return;
-            }
-
-
-            if (label === 'Crypto') {
-
-                setState(
-                    item,
-                    value > 0
-                        ? 'positive'
-                        : 'neutral'
-                );
-
-                return;
-            }
-
-
-            if (label === 'Debt') {
-
-                setState(
-                    item,
-                    value <= 0
-                        ? 'positive'
-                        : 'negative'
-                );
-
-                return;
-            }
-
-
-            if (label === 'Bills') {
-
-                setState(
-                    item,
-                    value === 0 ||
-                    cash >= value
-                        ? 'positive'
-                        : 'negative'
-                );
-
-                return;
-            }
-
-
-            if (label === 'Net Worth') {
-
-                setState(
-                    item,
-                    value > 0
-                        ? 'positive'
-                        : 'negative'
-                );
-            }
-        });
-
-});
-</script>
-
-<!-- END DASHBOARD STATUS COLORS -->

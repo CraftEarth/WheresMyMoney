@@ -1,4 +1,4 @@
-.app {
+﻿.app {
     background: #f4f6fb;
 }
 
@@ -3705,3 +3705,1341 @@ input[placeholder="Search transactions..."] {
 .money-allocation-item:last-child {
     border-radius: 0 0 11px 0;
 }
+
+/* ==========================================================
+   WHERE'S MY MONEY — DESKTOP DASHBOARD V2
+   ========================================================== */
+
+body.app:has(.dashboard-v2) {
+    overflow: hidden;
+    background: #f4f7fb;
+}
+
+.dashboard-v2 {
+    min-height: 100vh;
+}
+
+.dashboard-v2 .wm-dashboard {
+    height: 100vh;
+    overflow: hidden;
+    padding: 18px 24px 16px;
+}
+
+/* ---------------- TOP BAR ---------------- */
+
+.wm-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 12px;
+}
+
+.wm-topbar h1 {
+    margin: 0;
+    color: #111a31;
+    font-size: 26px;
+    line-height: 1.05;
+    letter-spacing: -.035em;
+}
+
+.wm-topbar p {
+    margin: 3px 0 0;
+    color: #778299;
+    font-size: 11px;
+}
+
+.wm-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wm-date {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-right: 8px;
+    color: #7d879b;
+    font-size: 10px;
+}
+
+.wm-button {
+    display: inline-flex;
+    height: 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 13px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.wm-button-primary {
+    background: linear-gradient(135deg, #315efb, #4b63f5);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(49, 94, 251, .18);
+}
+
+.wm-button-light {
+    border-color: #dce2ec;
+    background: #fff;
+    color: #172033;
+}
+
+.wm-user-avatar {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    margin-left: 4px;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #315efb, #7257e8);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+/* ---------------- SUMMARY ---------------- */
+
+.wm-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.wm-summary-card {
+    position: relative;
+    min-width: 0;
+    min-height: 115px;
+    overflow: hidden;
+    padding: 13px 14px 11px;
+    border: 1px solid #e2e7ef;
+    border-radius: 11px;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(27, 39, 66, .035);
+}
+
+.wm-summary-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #576277;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.wm-summary-icon {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.wm-summary-card > strong {
+    display: block;
+    margin: 8px 0 3px;
+    font-size: 20px;
+    line-height: 1;
+    letter-spacing: -.035em;
+}
+
+.wm-summary-card > small {
+    display: block;
+    color: #8b95a6;
+    font-size: 8.5px;
+}
+
+.wm-state-danger {
+    border-color: #f1c9ce;
+    background: linear-gradient(135deg, #fff2f3, #fffafa);
+}
+
+.wm-state-danger .wm-summary-icon {
+    background: #ffdfe3;
+    color: #d5263b;
+}
+
+.wm-state-danger > strong {
+    color: #c92538;
+}
+
+.wm-state-success {
+    border-color: #cce7d8;
+    background: linear-gradient(135deg, #effaf4, #fbfffd);
+}
+
+.wm-state-success .wm-summary-icon {
+    background: #d7f4e3;
+    color: #128253;
+}
+
+.wm-state-success > strong {
+    color: #075f3d;
+}
+
+.wm-state-warning {
+    border-color: #edd9aa;
+    background: linear-gradient(135deg, #fff9e9, #fffdf7);
+}
+
+.wm-state-warning .wm-summary-icon {
+    background: #ffedc3;
+    color: #a66c00;
+}
+
+.wm-state-warning > strong {
+    color: #bd2d35;
+}
+
+.wm-mini-line {
+    position: absolute;
+    right: 14px;
+    bottom: 10px;
+    left: 14px;
+    height: 2px;
+    opacity: .45;
+}
+
+.wm-line-red {
+    background: linear-gradient(90deg, transparent, #ef3e50, transparent);
+}
+
+.wm-line-green {
+    background: linear-gradient(90deg, transparent, #18a96a, transparent);
+}
+
+/* ---------------- ALLOCATION ---------------- */
+
+.wm-allocation {
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid #dfe5ee;
+    border-radius: 11px;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(27, 39, 66, .03);
+}
+
+.wm-section-heading {
+    display: flex;
+    height: 47px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+}
+
+.wm-section-heading h2 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.wm-section-heading p {
+    margin: 2px 0 0;
+    color: #8791a3;
+    font-size: 8.5px;
+}
+
+.wm-section-heading a,
+.wm-panel-heading a,
+.wm-crypto-head a {
+    color: #315efb;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.wm-allocation-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.wm-allocation-cell {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid #e8ecf2;
+    border-right: 1px solid #e3e8ef;
+}
+
+.wm-allocation-cell:last-child {
+    border-right: 0;
+}
+
+.wm-allocation-cell small {
+    display: block;
+    color: #657086;
+    font-size: 8px;
+}
+
+.wm-allocation-cell strong {
+    display: block;
+    margin: 1px 0;
+    font-size: 16px;
+    line-height: 1.1;
+}
+
+.wm-allocation-cell p {
+    margin: 0;
+    color: #8c96a8;
+    font-size: 8px;
+}
+
+.wm-allocation-icon {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.wm-allocation-cash {
+    background: #f0faf4;
+}
+
+.wm-allocation-cash .wm-allocation-icon {
+    background: #d6f3e2;
+    color: #0d8d55;
+}
+
+.wm-allocation-crypto {
+    background: #f2f6ff;
+}
+
+.wm-allocation-crypto .wm-allocation-icon {
+    background: #dfe9ff;
+    color: #315efb;
+}
+
+.wm-allocation-debt {
+    background: #fff2f3;
+}
+
+.wm-allocation-debt .wm-allocation-icon {
+    background: #ffdfe2;
+    color: #d5253b;
+}
+
+.wm-allocation-bills {
+    background: #fff8e9;
+}
+
+.wm-allocation-bills .wm-allocation-icon {
+    background: #ffedc4;
+    color: #a96c00;
+}
+
+.wm-allocation-worth {
+    background: #effaf4;
+}
+
+.wm-allocation-worth .wm-allocation-icon {
+    background: #d6f3e2;
+    color: #0c8150;
+}
+
+/* ---------------- MAIN GRID ---------------- */
+
+.wm-main-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(250px, .92fr)
+        minmax(390px, 1.18fr)
+        minmax(270px, .92fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.wm-panel {
+    min-width: 0;
+    height: 355px;
+    overflow: hidden;
+    border: 1px solid #e0e5ed;
+    border-radius: 11px;
+    background: #fff;
+    box-shadow: 0 5px 16px rgba(27, 39, 66, .03);
+}
+
+.wm-panel-heading,
+.wm-crypto-head {
+    display: flex;
+    height: 44px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.wm-panel-heading h2,
+.wm-crypto-head h2 {
+    margin: 0;
+    font-size: 13px;
+}
+
+.wm-list {
+    display: grid;
+}
+
+.wm-list-row,
+.wm-gain-row {
+    display: flex;
+    min-height: 50px;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 13px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.wm-list-row:last-child,
+.wm-gain-row:last-child {
+    border-bottom: 0;
+}
+
+.wm-row-icon {
+    display: grid;
+    width: 29px;
+    height: 29px;
+    flex: 0 0 29px;
+    place-items: center;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.wm-row-icon-warning {
+    background: #fff3dc;
+    color: #ee8c00;
+}
+
+.wm-row-icon-success {
+    background: #e5f8ee;
+    color: #0d9b5d;
+}
+
+.wm-row-icon-blue {
+    background: #edf3ff;
+    color: #315efb;
+}
+
+.wm-row-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+}
+
+.wm-row-copy strong {
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wm-row-copy small {
+    margin-top: 2px;
+    overflow: hidden;
+    color: #8b95a7;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wm-row-end {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.wm-row-end strong,
+.wm-transaction-amount,
+.wm-gain-row > strong {
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.wm-pill,
+.wm-time-pill {
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: #eef2f6;
+    color: #647087;
+    font-size: 7px;
+    font-weight: 800;
+}
+
+.wm-pill-danger {
+    background: #ffe4e7;
+    color: #c42638;
+}
+
+.wm-date-column {
+    width: 42px;
+    flex: 0 0 42px;
+    color: #8590a5;
+    font-size: 8px;
+    font-weight: 800;
+}
+
+/* ---------------- GAINS ---------------- */
+
+.wm-gains-summary {
+    position: relative;
+    margin: 10px 12px 7px;
+    padding: 11px 12px;
+    overflow: hidden;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #eefaf3, #f9fffc);
+}
+
+.wm-gains-summary small {
+    color: #63726a;
+    font-size: 8px;
+}
+
+.wm-gains-summary > strong {
+    display: block;
+    margin-top: 3px;
+    color: #087648;
+    font-size: 20px;
+}
+
+.wm-gains-chart {
+    position: absolute;
+    right: 12px;
+    bottom: 13px;
+    width: 42%;
+    height: 34px;
+}
+
+.wm-gains-chart span,
+.wm-crypto-line span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-bottom: 2px solid #19a766;
+    transform: skewY(-8deg);
+    opacity: .8;
+}
+
+.wm-gains-panel h3 {
+    margin: 8px 12px 4px;
+    font-size: 9px;
+}
+
+.wm-gain-row {
+    min-height: 47px;
+}
+
+/* ---------------- BOTTOM ---------------- */
+
+.wm-bottom-grid {
+    display: grid;
+    grid-template-columns:
+        minmax(290px, .92fr)
+        minmax(500px, 2.08fr);
+    gap: 10px;
+}
+
+.wm-crypto-snapshot,
+.wm-status-banner {
+    min-height: 88px;
+    border: 1px solid #dfe5ed;
+    border-radius: 11px;
+    background: #fff;
+}
+
+.wm-crypto-head {
+    height: 35px;
+}
+
+.wm-crypto-head h2 {
+    font-size: 11px;
+}
+
+.wm-crypto-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 13px;
+}
+
+.wm-crypto-body small {
+    display: block;
+    color: #8490a4;
+    font-size: 8px;
+}
+
+.wm-crypto-body strong {
+    display: block;
+    margin-top: 2px;
+    font-size: 16px;
+}
+
+.wm-crypto-line {
+    width: 42%;
+    height: 30px;
+}
+
+.wm-crypto-line span {
+    border-color: #3677ef;
+}
+
+.wm-status-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    border-color: #cce9d8;
+    background: linear-gradient(90deg, #effbf4, #f9fffc);
+}
+
+.wm-status-icon {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: #d9f4e4;
+}
+
+.wm-status-copy {
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+}
+
+.wm-status-copy strong {
+    font-size: 10px;
+}
+
+.wm-status-copy span {
+    margin-top: 2px;
+    color: #7c8a83;
+    font-size: 8px;
+}
+
+.wm-status-button {
+    padding: 8px 11px;
+    border: 1px solid #8bd4aa;
+    border-radius: 8px;
+    background: #fff;
+    color: #146b45;
+    font-size: 8px;
+    font-weight: 800;
+}
+
+/* ---------------- SIDEBAR V2 ---------------- */
+
+.app-sidebar {
+    width: 210px;
+    padding: 20px 12px;
+    background:
+        linear-gradient(
+            180deg,
+            #101d2d,
+            #172536
+        );
+}
+
+.app-layout {
+    margin-left: 210px;
+}
+
+.app-brand {
+    gap: 10px;
+    padding: 2px 8px 20px;
+}
+
+.app-brand-mark {
+    display: flex;
+    width: 32px;
+    height: 32px;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    padding: 7px;
+    border-radius: 8px;
+    background: rgba(12, 190, 124, .12);
+}
+
+.app-brand-mark span {
+    width: 4px;
+    border-radius: 4px;
+    background: #18bb7b;
+}
+
+.app-brand-mark span:nth-child(1) {
+    height: 9px;
+}
+
+.app-brand-mark span:nth-child(2) {
+    height: 16px;
+}
+
+.app-brand-mark span:nth-child(3) {
+    height: 22px;
+}
+
+.app-brand strong {
+    font-size: 13px;
+}
+
+.app-brand small {
+    font-size: 8px;
+}
+
+.app-nav {
+    gap: 3px;
+}
+
+.app-nav a {
+    position: relative;
+    min-height: 40px;
+    gap: 10px;
+    padding: 0 10px;
+    border-radius: 7px;
+    color: #b8c2d3;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.app-nav a:hover {
+    background: rgba(255, 255, 255, .055);
+}
+
+.app-nav a.active {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(62, 102, 226, .70),
+            rgba(62, 102, 226, .46)
+        );
+    color: #fff;
+}
+
+.app-nav a.active::before {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: -4px;
+    width: 3px;
+    border-radius: 4px;
+    background: #4c73ff;
+    content: "";
+}
+
+.app-nav .nav-icon {
+    display: grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    background: transparent;
+}
+
+.nav-icon svg {
+    width: 17px;
+    height: 17px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.app-nav-divider {
+    height: 1px;
+    margin: 13px 6px;
+    background: rgba(255, 255, 255, .12);
+}
+
+.connect-card {
+    display: none;
+}
+
+.wm-empty {
+    padding: 18px;
+    color: #8791a4;
+    font-size: 9px;
+}
+
+/* shorter monitors can scroll; normal desktop stays fixed */
+@media (max-height: 820px) {
+    body.app:has(.dashboard-v2) {
+        overflow-y: auto;
+    }
+
+    .dashboard-v2 .wm-dashboard {
+        height: auto;
+        overflow: visible;
+    }
+}
+
+
+/* ==========================================================
+   DASHBOARD V2 — TIGHTER STATUS CARDS
+   ========================================================== */
+
+.wm-summary-card {
+    min-height: 88px !important;
+    height: 88px !important;
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+}
+
+.wm-summary-head {
+    gap: 6px !important;
+    font-size: 9px !important;
+}
+
+.wm-summary-card > strong {
+    margin: 5px 0 2px !important;
+    font-size: 18px !important;
+}
+
+.wm-summary-card > small {
+    font-size: 7.5px !important;
+}
+
+.wm-summary-icon {
+    width: 24px !important;
+    height: 24px !important;
+    flex: 0 0 24px !important;
+    border-radius: 7px !important;
+}
+
+/* WHOLE BOX = STATUS, not just number */
+
+.wm-state-danger {
+    background:
+        linear-gradient(
+            135deg,
+            #fff0f1 0%,
+            #fff7f8 100%
+        ) !important;
+    border-color: #efb8bf !important;
+}
+
+.wm-state-danger > strong {
+    color: #c62537 !important;
+}
+
+.wm-state-danger .wm-summary-head {
+    color: #88444c !important;
+}
+
+.wm-state-success {
+    background:
+        linear-gradient(
+            135deg,
+            #eaf9f1 0%,
+            #f5fdf8 100%
+        ) !important;
+    border-color: #afe0c4 !important;
+}
+
+.wm-state-success > strong {
+    color: #087748 !important;
+}
+
+.wm-state-success .wm-summary-head {
+    color: #3e6f59 !important;
+}
+
+.wm-state-warning {
+    background:
+        linear-gradient(
+            135deg,
+            #fff6df 0%,
+            #fffaf0 100%
+        ) !important;
+    border-color: #efd49b !important;
+}
+
+.wm-state-warning > strong {
+    color: #a96800 !important;
+}
+
+.wm-state-warning .wm-summary-head {
+    color: #806735 !important;
+}
+
+/* smaller allocation strip too */
+
+.wm-section-heading {
+    height: 39px !important;
+}
+
+.wm-allocation-cell {
+    padding: 7px 12px !important;
+}
+
+.wm-allocation-icon {
+    width: 27px !important;
+    height: 27px !important;
+    flex: 0 0 27px !important;
+}
+
+.wm-allocation-cell strong {
+    font-size: 14px !important;
+}
+
+
+/* ==========================================================
+   SVG ICON PASS
+   ========================================================== */
+
+.wm-svg-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.wm-summary-icon .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-allocation-icon .wm-svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.wm-row-icon .wm-svg-icon {
+    width: 15px;
+    height: 15px;
+}
+
+.wm-panel-heading h2,
+.wm-section-heading h2,
+.wm-crypto-head h2 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.wm-panel-heading h2 .wm-svg-icon,
+.wm-section-heading h2 .wm-svg-icon {
+    color: #315efb;
+}
+
+.wm-crypto-head h2 .wm-svg-icon {
+    color: #f59e0b;
+}
+
+.wm-status-icon .wm-svg-icon {
+    width: 18px;
+    height: 18px;
+    color: #0c9b5d;
+}
+
+
+/* ==========================================================
+   FINAL SVG ICON RENDERING
+   ========================================================== */
+
+.wm-svg-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.wm-summary-icon .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-allocation-icon .wm-svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.wm-row-icon .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-section-heading h2,
+.wm-panel-heading h2,
+.wm-crypto-head h2 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+.wm-section-heading h2 > .wm-svg-icon,
+.wm-panel-heading h2 > .wm-svg-icon {
+    width: 17px;
+    height: 17px;
+    color: #315efb;
+}
+
+.wm-crypto-head h2 > .wm-svg-icon {
+    width: 17px;
+    height: 17px;
+    color: #f59e0b;
+}
+
+.wm-date .wm-svg-icon {
+    width: 13px;
+    height: 13px;
+}
+
+#dashboard-plaid-sync {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+#dashboard-plaid-sync .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-status-icon .wm-svg-icon {
+    width: 18px;
+    height: 18px;
+    color: #0c9b5d;
+}
+
+
+/* BEGIN WMM SVG ICON CSS */
+
+.wm-svg-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.wm-summary-icon .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-allocation-icon .wm-svg-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.wm-row-icon .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.wm-section-heading h2,
+.wm-panel-heading h2,
+.wm-crypto-head h2 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+.wm-section-heading h2 > .wm-svg-icon,
+.wm-panel-heading h2 > .wm-svg-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    color: #315efb;
+}
+
+.wm-crypto-head h2 > .wm-svg-icon {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 17px;
+    color: #f59e0b;
+}
+
+.wm-status-icon .wm-svg-icon {
+    width: 18px;
+    height: 18px;
+    color: #0c9b5d;
+}
+
+.wm-date .wm-svg-icon {
+    width: 13px;
+    height: 13px;
+}
+
+#dashboard-plaid-sync {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+#dashboard-plaid-sync .wm-svg-icon {
+    width: 14px;
+    height: 14px;
+}
+
+/* END WMM SVG ICON CSS */
+
+
+/* ==========================================================
+   DASHBOARD V2 — TYPOGRAPHY / SPACE UTILIZATION PASS
+   ========================================================== */
+
+/* Top greeting */
+
+.wm-topbar h1 {
+    font-size: 28px !important;
+}
+
+.wm-topbar p {
+    font-size: 12px !important;
+}
+
+
+/* Summary cards */
+
+.wm-summary-head {
+    font-size: 10px !important;
+}
+
+.wm-summary-card > strong {
+    font-size: 20px !important;
+    margin-top: 6px !important;
+}
+
+.wm-summary-card > small {
+    font-size: 8.5px !important;
+}
+
+
+/* Money Allocation */
+
+.wm-section-heading h2 {
+    font-size: 15px !important;
+}
+
+.wm-section-heading p {
+    font-size: 9px !important;
+}
+
+.wm-allocation-cell {
+    gap: 12px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+}
+
+.wm-allocation-icon {
+    width: 31px !important;
+    height: 31px !important;
+    flex-basis: 31px !important;
+}
+
+.wm-allocation-cell small {
+    font-size: 9px !important;
+}
+
+.wm-allocation-cell strong {
+    font-size: 16px !important;
+}
+
+.wm-allocation-cell p {
+    margin-top: 2px !important;
+    font-size: 8.5px !important;
+}
+
+
+/* Main panel headings */
+
+.wm-panel-heading h2 {
+    font-size: 14px !important;
+}
+
+.wm-panel-heading a,
+.wm-section-heading a,
+.wm-crypto-head a {
+    font-size: 9.5px !important;
+}
+
+
+/* Bills + transactions + gains rows */
+
+.wm-list-row,
+.wm-gain-row {
+    min-height: 54px !important;
+    padding: 8px 14px !important;
+}
+
+.wm-row-icon {
+    width: 31px !important;
+    height: 31px !important;
+    flex-basis: 31px !important;
+}
+
+.wm-row-copy strong {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+}
+
+.wm-row-copy small {
+    margin-top: 3px !important;
+    font-size: 8.5px !important;
+}
+
+.wm-row-end strong,
+.wm-transaction-amount,
+.wm-gain-row > strong {
+    font-size: 11px !important;
+}
+
+.wm-date-column {
+    width: 46px !important;
+    flex-basis: 46px !important;
+    font-size: 8.5px !important;
+}
+
+
+/* Status badges */
+
+.wm-pill,
+.wm-time-pill {
+    padding: 4px 7px !important;
+    font-size: 7.5px !important;
+}
+
+
+/* Gains panel */
+
+.wm-gains-summary small {
+    font-size: 8.5px !important;
+}
+
+.wm-gains-summary > strong {
+    font-size: 22px !important;
+}
+
+.wm-gains-panel h3 {
+    font-size: 9.5px !important;
+}
+
+
+/* Crypto snapshot */
+
+.wm-crypto-head h2 {
+    font-size: 12px !important;
+}
+
+.wm-crypto-body small {
+    font-size: 8.5px !important;
+}
+
+.wm-crypto-body strong {
+    font-size: 18px !important;
+}
+
+
+/* Bottom insight banner */
+
+.wm-status-copy strong {
+    font-size: 11px !important;
+}
+
+.wm-status-copy span {
+    font-size: 8.5px !important;
+}
+
+.wm-status-button {
+    font-size: 9px !important;
+}
+
+
+/* Stronger SVG presence */
+
+.wm-summary-icon .wm-svg-icon {
+    width: 15px !important;
+    height: 15px !important;
+}
+
+.wm-row-icon .wm-svg-icon {
+    width: 15px !important;
+    height: 15px !important;
+}
+
+.wm-allocation-icon .wm-svg-icon {
+    width: 17px !important;
+    height: 17px !important;
+}
+
+
+/* ==========================================================
+   DASHBOARD V2 — FINAL PROPORTION PASS
+   ========================================================== */
+
+.wm-main-grid {
+    grid-template-columns:
+        minmax(260px, 0.82fr)
+        minmax(470px, 1.28fr)
+        minmax(300px, 0.95fr)
+        !important;
+}
+
+/* give transaction content more room */
+.wm-transactions-panel .wm-row-copy strong {
+    font-size: 11.5px !important;
+}
+
+.wm-transactions-panel .wm-row-copy small {
+    font-size: 8.8px !important;
+}
+
+.wm-transactions-panel .wm-transaction-amount {
+    font-size: 11.5px !important;
+}
+
+/* slightly stronger bill rows */
+.wm-panel:first-child .wm-row-copy strong {
+    font-size: 11.3px !important;
+}
+
+.wm-panel:first-child .wm-row-end strong {
+    font-size: 11.3px !important;
+}
+
+/* gains content a little bolder */
+.wm-gains-panel .wm-row-copy strong {
+    font-size: 10.8px !important;
+}
+
+.wm-gains-panel .wm-gain-row > strong {
+    font-size: 10.8px !important;
+}
+
+/* top cards breathe just a little more */
+.wm-summary-card {
+    min-height: 92px !important;
+    height: 92px !important;
+}
+
+/* keep overall dashboard compact */
+.dashboard-v2 .wm-dashboard {
+    padding-bottom: 12px !important;
+}
+
