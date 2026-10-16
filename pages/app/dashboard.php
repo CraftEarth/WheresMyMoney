@@ -25,7 +25,24 @@
 
                 <label class="app-search">
 
-                    <input
+                    <button
+    type="button"
+    id="dashboard-plaid-sync"
+    class="primary-button"
+    style="white-space: nowrap;"
+>
+    ? Sync Now
+</button>
+
+<div
+    id="dashboard-sync-status"
+    style="
+        font-size: 12px;
+        color: #667085;
+        white-space: nowrap;
+    "
+></div>
+<input
                         type="search"
                         placeholder="Search transactions..."
                     >
@@ -159,7 +176,155 @@
 
             </article>
 
-        </section>
+        
+            <section class="money-allocation">
+
+    <div class="money-allocation-heading">
+
+        <div>
+            <small>
+                YOUR MONEY
+            </small>
+
+            <h2>
+                Money Allocation
+            </h2>
+        </div>
+
+        <a href="<?= e(url('reports.php')); ?>">
+            View Reports
+        </a>
+
+    </div>
+
+
+    <div class="money-allocation-grid">
+
+        <a
+            class="money-allocation-item"
+            href="<?= e(url('accounts.php')); ?>"
+        >
+
+            <span>
+                Cash
+            </span>
+
+            <strong>
+                <?= money(
+                    (float) $summary['cash']
+                ); ?>
+            </strong>
+
+            <small>
+                <?= number_format(
+                    (float) $summary[
+                        'cash_percent'
+                    ],
+                    1
+                ); ?>% of net worth
+            </small>
+
+        </a>
+
+
+        <a
+            class="money-allocation-item"
+            href="<?= e(url('crypto.php')); ?>"
+        >
+
+            <span>
+                Crypto
+            </span>
+
+            <strong>
+                <?= money(
+                    (float) $summary['crypto']
+                ); ?>
+            </strong>
+
+            <small>
+                <?= number_format(
+                    (float) $summary[
+                        'crypto_percent'
+                    ],
+                    1
+                ); ?>% of net worth
+            </small>
+
+        </a>
+
+
+        <a
+            class="money-allocation-item"
+            href="<?= e(url('accounts.php')); ?>"
+        >
+
+            <span>
+                Debt
+            </span>
+
+            <strong>
+                <?= money(
+                    (float) $summary['debt']
+                ); ?>
+            </strong>
+
+            <small>
+                Current liabilities
+            </small>
+
+        </a>
+
+
+        <a
+            class="money-allocation-item"
+            href="<?= e(url('bills.php')); ?>"
+        >
+
+            <span>
+                Bills
+            </span>
+
+            <strong>
+                <?= money(
+                    (float) $summary['bills']
+                ); ?>
+            </strong>
+
+            <small>
+                Upcoming obligations
+            </small>
+
+        </a>
+
+
+        <a
+            class="money-allocation-item money-allocation-net-worth"
+            href="<?= e(url('reports.php')); ?>"
+        >
+
+            <span>
+                Net Worth
+            </span>
+
+            <strong>
+                <?= money(
+                    (float) $summary[
+                        'net_worth'
+                    ]
+                ); ?>
+            </strong>
+
+            <small>
+                Assets minus liabilities
+            </small>
+
+        </a>
+
+    </div>
+
+</section>
+</section>
 
 
         <section
@@ -737,3 +902,383 @@
 
 
 
+
+<script>
+(function () {
+    const dashboardPlaidSync =
+        document.getElementById(
+            'dashboard-plaid-sync'
+        );
+
+    const syncStatus =
+        document.getElementById(
+            'dashboard-sync-status'
+        );
+
+    if (!dashboardPlaidSync) {
+        return;
+    }
+
+    dashboardPlaidSync.addEventListener(
+        'click',
+        async function () {
+            dashboardPlaidSync.disabled = true;
+            dashboardPlaidSync.textContent =
+                'Syncing...';
+
+            if (syncStatus) {
+                syncStatus.textContent =
+                    'Checking Plaid for updates...';
+            }
+
+            try {
+                const response = await fetch(
+                    '<?= e(url('plaid-sync.php')); ?>',
+                    {
+                        credentials: 'same-origin',
+                        cache: 'no-store'
+                    }
+                );
+
+                const result =
+                    await response.text();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result ||
+                        'Plaid sync failed.'
+                    );
+                }
+
+                if (
+                    result.toLowerCase()
+                        .includes('error')
+                ) {
+                    throw new Error(result);
+                }
+
+                dashboardPlaidSync.textContent =
+                    '? Synced';
+
+                if (syncStatus) {
+                    syncStatus.textContent =
+                        'Sync complete. Refreshing...';
+                }
+
+                setTimeout(
+                    function () {
+                        window.location.reload();
+                    },
+                    700
+                );
+
+            } catch (error) {
+                dashboardPlaidSync.disabled =
+                    false;
+
+                dashboardPlaidSync.textContent =
+                    '? Sync Now';
+
+                if (syncStatus) {
+                    syncStatus.textContent =
+                        'Sync failed: '
+                        + error.message;
+                }
+            }
+        }
+    );
+})();
+</script>
+<!-- BEGIN DASHBOARD STATUS COLORS -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    function parseMoney(text) {
+
+        if (!text) {
+            return 0;
+        }
+
+        const cleaned = text
+            .replace(/[$,%+]/g, '')
+            .replace(/,/g, '')
+            .trim();
+
+        const value =
+            parseFloat(cleaned);
+
+        return Number.isFinite(value)
+            ? value
+            : 0;
+    }
+
+
+    /*
+     * Find the six top dashboard cards by their visible labels.
+     */
+    const topMetrics = {};
+
+    document
+        .querySelectorAll('article')
+        .forEach(function (card) {
+
+            const text =
+                card.innerText.trim();
+
+            [
+                'Total Cash',
+                'Monthly Income',
+                'Monthly Spending',
+                'Upcoming Bills',
+                'Safe to Spend',
+                'Net Worth'
+            ].forEach(function (label) {
+
+                if (
+                    text.startsWith(label)
+                ) {
+                    topMetrics[label] =
+                        card;
+                }
+            });
+        });
+
+
+    function cardValue(label) {
+
+        const card =
+            topMetrics[label];
+
+        if (!card) {
+            return 0;
+        }
+
+        const strong =
+            card.querySelector('strong');
+
+        return parseMoney(
+            strong
+                ? strong.textContent
+                : ''
+        );
+    }
+
+
+    const cash =
+        cardValue('Total Cash');
+
+    const income =
+        cardValue('Monthly Income');
+
+    const spending =
+        cardValue('Monthly Spending');
+
+    const bills =
+        cardValue('Upcoming Bills');
+
+    const safe =
+        cardValue('Safe to Spend');
+
+    const netWorth =
+        cardValue('Net Worth');
+
+
+    function setState(
+        element,
+        state
+    ) {
+
+        if (!element) {
+            return;
+        }
+
+        element.classList.remove(
+            'money-state-positive',
+            'money-state-negative',
+            'money-state-neutral'
+        );
+
+        element.classList.add(
+            'money-state-' + state
+        );
+    }
+
+
+    /*
+     * ========================================================
+     * TOP DASHBOARD RULES
+     * ========================================================
+     *
+     * Cash:
+     * green when current cash can cover upcoming bills.
+     *
+     * Income:
+     * green when income keeps pace with spending.
+     *
+     * Spending:
+     * green when spending <= income.
+     *
+     * Bills:
+     * green when current cash covers them.
+     *
+     * Safe to Spend:
+     * green only when something remains after obligations.
+     *
+     * Net Worth:
+     * green when positive.
+     */
+
+
+    setState(
+        topMetrics['Total Cash'],
+        cash >= bills
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    setState(
+        topMetrics['Monthly Income'],
+        income >= spending
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    setState(
+        topMetrics['Monthly Spending'],
+        spending <= income
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    setState(
+        topMetrics['Upcoming Bills'],
+        bills === 0 || cash >= bills
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    setState(
+        topMetrics['Safe to Spend'],
+        safe > 0
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    setState(
+        topMetrics['Net Worth'],
+        netWorth > 0
+            ? 'positive'
+            : 'negative'
+    );
+
+
+    /*
+     * ========================================================
+     * MONEY ALLOCATION
+     * ========================================================
+     */
+
+    document
+        .querySelectorAll(
+            '.money-allocation-item'
+        )
+        .forEach(function (item) {
+
+            const labelElement =
+                item.querySelector('span');
+
+            const valueElement =
+                item.querySelector('strong');
+
+            if (
+                !labelElement ||
+                !valueElement
+            ) {
+                return;
+            }
+
+            const label =
+                labelElement
+                    .textContent
+                    .trim();
+
+            const value =
+                parseMoney(
+                    valueElement.textContent
+                );
+
+
+            if (label === 'Cash') {
+
+                setState(
+                    item,
+                    cash >= bills
+                        ? 'positive'
+                        : 'negative'
+                );
+
+                return;
+            }
+
+
+            if (label === 'Crypto') {
+
+                setState(
+                    item,
+                    value > 0
+                        ? 'positive'
+                        : 'neutral'
+                );
+
+                return;
+            }
+
+
+            if (label === 'Debt') {
+
+                setState(
+                    item,
+                    value <= 0
+                        ? 'positive'
+                        : 'negative'
+                );
+
+                return;
+            }
+
+
+            if (label === 'Bills') {
+
+                setState(
+                    item,
+                    value === 0 ||
+                    cash >= value
+                        ? 'positive'
+                        : 'negative'
+                );
+
+                return;
+            }
+
+
+            if (label === 'Net Worth') {
+
+                setState(
+                    item,
+                    value > 0
+                        ? 'positive'
+                        : 'negative'
+                );
+            }
+        });
+
+});
+</script>
+
+<!-- END DASHBOARD STATUS COLORS -->

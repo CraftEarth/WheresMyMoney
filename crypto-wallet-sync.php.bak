@@ -1,0 +1,332 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/includes/bootstrap.php';
+
+require_login();
+
+header('Content-Type: text/plain');
+
+$userId = current_user_id();
+
+$walletGroupId =
+    (int) (
+        $_GET['wallet_id']
+        ?? 0
+    );
+
+
+if ($walletGroupId <= 0) {
+    http_response_code(400);
+    echo 'Invalid wallet.';
+    exit;
+}
+
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM crypto_wallet_groups
+    WHERE id = :wallet_id
+      AND user_id = :user_id
+      AND wallet_status = "active"
+    LIMIT 1
+    '
+);
+
+$stmt->execute([
+    'wallet_id' =>
+        $walletGroupId,
+
+    'user_id' =>
+        $userId,
+]);
+
+$wallet = $stmt->fetch();
+
+if (!$wallet) {
+    http_response_code(404);
+    echo 'Wallet not found.';
+    exit;
+}
+
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM crypto_wallet_addresses
+    WHERE wallet_group_id = :wallet_id
+      AND user_id = :user_id
+      AND address_status = "active"
+    ORDER BY id ASC
+    '
+);
+
+$stmt->execute([
+    'wallet_id' =>
+        $walletGroupId,
+
+    'user_id' =>
+        $userId,
+]);
+
+$addresses =
+    $stmt->fetchAll();
+
+
+$ethBalance = null;
+$solBalance = null;
+
+$errors = [];
+
+
+foreach ($addresses as $address) {
+
+    try {
+
+        if (
+            $address['address_type']
+            === 'evm'
+        ) {
+            $ethBalance =
+                alchemy_eth_balance(
+                    (string) $address[
+                        'wallet_address'
+                    ]
+                );
+        }
+
+
+        if (
+            $address['address_type']
+            === 'solana'
+        ) {
+            $solBalance =
+                alchemy_sol_balance(
+                    (string) $address[
+                        'wallet_address'
+                    ]
+                );
+        }
+
+    } catch (Throwable $exception) {
+
+        $errors[] =
+            strtoupper(
+                (string) $address[
+                    'address_type'
+                ]
+            )
+            . ': '
+            . $exception->getMessage();
+    }
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Store native assets
+|--------------------------------------------------------------------------
+*/
+
+$pdo = db();
+
+$pdo->beginTransaction();
+
+try {
+
+    if ($ethBalance !== null) {
+
+        $stmt = $pdo->prepare(
+            '
+            DELETE FROM crypto_assets
+            WHERE user_id = :user_id
+              AND wallet_id = :wallet_id
+              AND network = "eth-mainnet"
+              AND asset_type = "native"
+            '
+        );
+
+        $stmt->execute([
+            'user_id' =>
+                $userId,
+
+            'wallet_id' =>
+                $walletGroupId,
+        ]);
+
+
+        $stmt = $pdo->prepare(
+            '
+            INSERT INTO crypto_assets (
+                user_id,
+                wallet_id,
+                network,
+                asset_type,
+                symbol,
+                asset_name,
+                quantity,
+                current_price,
+                current_value,
+                is_archived
+            )
+            VALUES (
+                :user_id,
+                :wallet_id,
+                "eth-mainnet",
+                "native",
+                "ETH",
+                "Ethereum",
+                :quantity,
+                NULL,
+                0,
+                0
+            )
+            '
+        );
+
+        $stmt->execute([
+            'user_id' =>
+                $userId,
+
+            'wallet_id' =>
+                $walletGroupId,
+
+            'quantity' =>
+                $ethBalance,
+        ]);
+    }
+
+
+    if ($solBalance !== null) {
+
+        $stmt = $pdo->prepare(
+            '
+            DELETE FROM crypto_assets
+            WHERE user_id = :user_id
+              AND wallet_id = :wallet_id
+              AND network = "solana-mainnet"
+              AND asset_type = "native"
+            '
+        );
+
+        $stmt->execute([
+            'user_id' =>
+                $userId,
+
+            'wallet_id' =>
+                $walletGroupId,
+        ]);
+
+
+        $stmt = $pdo->prepare(
+            '
+            INSERT INTO crypto_assets (
+                user_id,
+                wallet_id,
+                network,
+                asset_type,
+                symbol,
+                asset_name,
+                quantity,
+                current_price,
+                current_value,
+                is_archived
+            )
+            VALUES (
+                :user_id,
+                :wallet_id,
+                "solana-mainnet",
+                "native",
+                "SOL",
+                "Solana",
+                :quantity,
+                NULL,
+                0,
+                0
+            )
+            '
+        );
+
+        $stmt->execute([
+            'user_id' =>
+                $userId,
+
+            'wallet_id' =>
+                $walletGroupId,
+
+            'quantity' =>
+                $solBalance,
+        ]);
+    }
+
+
+    $stmt = $pdo->prepare(
+        '
+        UPDATE crypto_wallet_groups
+        SET last_synced_at = NOW()
+        WHERE id = :wallet_id
+          AND user_id = :user_id
+        '
+    );
+
+    $stmt->execute([
+        'wallet_id' =>
+            $walletGroupId,
+
+        'user_id' =>
+            $userId,
+    ]);
+
+
+    $pdo->commit();
+
+} catch (Throwable $exception) {
+
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    http_response_code(500);
+
+    echo 'Save failed: '
+        . $exception->getMessage();
+
+    exit;
+}
+
+
+echo 'Wallet sync complete.'
+    . PHP_EOL;
+
+if ($ethBalance !== null) {
+    echo 'ETH: '
+        . number_format(
+            $ethBalance,
+            8
+        )
+        . PHP_EOL;
+}
+
+if ($solBalance !== null) {
+    echo 'SOL: '
+        . number_format(
+            $solBalance,
+            8
+        )
+        . PHP_EOL;
+}
+
+if ($errors !== []) {
+
+    echo PHP_EOL
+        . 'Warnings:'
+        . PHP_EOL;
+
+    foreach ($errors as $error) {
+        echo '- '
+            . $error
+            . PHP_EOL;
+    }
+}

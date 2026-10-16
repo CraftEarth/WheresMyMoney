@@ -1,0 +1,638 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/includes/bootstrap.php';
+
+require_login();
+
+header('Content-Type: text/plain');
+
+$userId = current_user_id();
+$walletId = (int) ($_GET['wallet_id'] ?? 0);
+
+if ($walletId <= 0) {
+    http_response_code(400);
+    echo 'Invalid wallet.';
+    exit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Load wallet
+|--------------------------------------------------------------------------
+*/
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM crypto_wallet_groups
+    WHERE id = :wallet_id
+      AND user_id = :user_id
+      AND wallet_status = "active"
+    LIMIT 1
+    '
+);
+
+$stmt->execute([
+    'wallet_id' => $walletId,
+    'user_id' => $userId,
+]);
+
+$wallet = $stmt->fetch();
+
+if (!$wallet) {
+    http_response_code(404);
+    echo 'Wallet not found.';
+    exit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Load wallet addresses
+|--------------------------------------------------------------------------
+*/
+
+$stmt = db()->prepare(
+    '
+    SELECT *
+    FROM crypto_wallet_addresses
+    WHERE wallet_group_id = :wallet_id
+      AND user_id = :user_id
+      AND address_status = "active"
+    ORDER BY id ASC
+    '
+);
+
+$stmt->execute([
+    'wallet_id' => $walletId,
+    'user_id' => $userId,
+]);
+
+$walletAddresses = $stmt->fetchAll();
+
+
+/*
+|--------------------------------------------------------------------------
+| Build Alchemy Portfolio request
+|--------------------------------------------------------------------------
+*/
+
+$config = alchemy_config();
+
+$apiKey = (string) $config['api_key'];
+
+$requests = [];
+
+foreach ($walletAddresses as $address) {
+
+    $type = (string) $address['address_type'];
+    $value = (string) $address['wallet_address'];
+
+    if ($type === 'evm') {
+
+        $requests[] = [
+            'address' => $value,
+            'networks' => [
+                'eth-mainnet',
+            ],
+        ];
+    }
+
+    if ($type === 'solana') {
+
+        $requests[] = [
+            'address' => $value,
+            'networks' => [
+                'solana-mainnet',
+            ],
+        ];
+    }
+}
+
+
+if ($requests === []) {
+    echo 'No Alchemy-compatible addresses found.';
+    exit;
+}
+
+
+$url =
+    'https://api.g.alchemy.com/data/v1/'
+    . rawurlencode($apiKey)
+    . '/assets/tokens/by-address';
+
+
+$payload = [
+    'addresses' => $requests,
+
+    'withMetadata' => true,
+    'withPrices' => true,
+
+    'includeNativeTokens' => true,
+    'includeErc20Tokens' => true,
+
+    'includeBlockMetadata' => false,
+];
+
+
+$body = json_encode(
+    $payload,
+    JSON_THROW_ON_ERROR
+);
+
+
+$ch = curl_init($url);
+
+curl_setopt_array(
+    $ch,
+    [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => $body,
+        CURLOPT_TIMEOUT => 60,
+    ]
+);
+
+$responseBody = curl_exec($ch);
+
+if ($responseBody === false) {
+
+    $error = curl_error($ch);
+
+    curl_close($ch);
+
+    http_response_code(500);
+
+    echo 'Alchemy request failed: '
+        . $error;
+
+    exit;
+}
+
+
+$status = (int) curl_getinfo(
+    $ch,
+    CURLINFO_HTTP_CODE
+);
+
+curl_close($ch);
+
+
+$response = json_decode(
+    $responseBody,
+    true
+);
+
+
+if (
+    $status < 200 ||
+    $status >= 300
+) {
+    http_response_code(500);
+
+    echo 'Alchemy HTTP error '
+        . $status
+        . PHP_EOL
+        . $responseBody;
+
+    exit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+function crypto_hex_quantity(
+    string $hex,
+    int $decimals
+): float {
+
+    $hex = strtolower(
+        preg_replace(
+            '/^0x/',
+            '',
+            $hex
+        ) ?? ''
+    );
+
+    if ($hex === '') {
+        return 0.0;
+    }
+
+    /*
+     * Convert arbitrary-size hex into a floating
+     * representation suitable for display/value tracking.
+     *
+     * DB still stores the result as DECIMAL.
+     */
+    $number = 0.0;
+
+    foreach (str_split($hex) as $character) {
+
+        $number =
+            ($number * 16)
+            + hexdec($character);
+    }
+
+    if ($decimals > 0) {
+
+        $number /=
+            10 ** $decimals;
+    }
+
+    return $number;
+}
+
+
+function crypto_usd_price(
+    array $token
+): float {
+
+    foreach (
+        $token['tokenPrices'] ?? []
+        as $price
+    ) {
+
+        if (
+            strtolower(
+                (string) (
+                    $price['currency']
+                    ?? ''
+                )
+            ) === 'usd'
+        ) {
+            return (float) (
+                $price['value']
+                ?? 0
+            );
+        }
+    }
+
+    return 0.0;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Parse assets
+|--------------------------------------------------------------------------
+*/
+
+$tokens =
+    $response['data']['tokens']
+    ?? [];
+
+$assets = [];
+
+foreach ($tokens as $token) {
+
+    $metadata =
+        $token['tokenMetadata']
+        ?? [];
+
+    $symbol = trim(
+        (string) (
+            $metadata['symbol']
+            ?? ''
+        )
+    );
+
+    $name = trim(
+        (string) (
+            $metadata['name']
+            ?? $symbol
+            ?? 'Unknown'
+        )
+    );
+
+    $network = trim(
+        (string) (
+            $token['network']
+            ?? ''
+        )
+    );
+
+    $contractAddress =
+        $token['tokenAddress']
+        ?? null;
+
+    $decimals = (int) (
+        $metadata['decimals']
+        ?? 0
+    );
+
+    $balanceHex = (string) (
+        $token['tokenBalance']
+        ?? '0x0'
+    );
+
+    $quantity =
+        crypto_hex_quantity(
+            $balanceHex,
+            $decimals
+        );
+
+    /*
+     * Don't fill the portfolio with empty historical tokens.
+     */
+    if ($quantity <= 0) {
+        continue;
+    }
+
+    $price =
+        crypto_usd_price(
+            $token
+        );
+
+    $value =
+        $quantity * $price;
+
+    $assetType =
+        empty($contractAddress)
+            ? 'native'
+            : (
+                $network === 'solana-mainnet'
+                    ? 'spl'
+                    : 'erc20'
+            );
+
+
+    $assets[] = [
+        'network' =>
+            $network,
+
+        'asset_type' =>
+            $assetType,
+
+        'contract_address' =>
+            $contractAddress,
+
+        'symbol' =>
+            $symbol !== ''
+                ? $symbol
+                : 'UNKNOWN',
+
+        'asset_name' =>
+            $name !== ''
+                ? $name
+                : 'Unknown Asset',
+
+        'quantity' =>
+            $quantity,
+
+        'current_price' =>
+            $price,
+
+        'current_value' =>
+            $value,
+
+        'external_asset_id' =>
+            $contractAddress
+                ?: $network . ':native',
+    ];
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Save atomically
+|--------------------------------------------------------------------------
+*/
+
+$pdo = db();
+
+$pdo->beginTransaction();
+
+try {
+
+    /*
+     * This table contains provider-synced assets only,
+     * so refresh the wallet snapshot in one transaction.
+     */
+    $stmt = $pdo->prepare(
+        '
+        DELETE FROM crypto_assets
+        WHERE user_id = :user_id
+          AND wallet_id = :wallet_id
+        '
+    );
+
+    $stmt->execute([
+        'user_id' => $userId,
+        'wallet_id' => $walletId,
+    ]);
+
+
+    $insert = $pdo->prepare(
+        '
+        INSERT INTO crypto_assets (
+            user_id,
+            wallet_id,
+            network,
+            asset_type,
+            contract_address,
+            symbol,
+            asset_name,
+            quantity,
+            current_price,
+            current_value,
+            external_asset_id,
+            is_archived
+        )
+        VALUES (
+            :user_id,
+            :wallet_id,
+            :network,
+            :asset_type,
+            :contract_address,
+            :symbol,
+            :asset_name,
+            :quantity,
+            :current_price,
+            :current_value,
+            :external_asset_id,
+            0
+        )
+        '
+    );
+
+
+    foreach ($assets as $asset) {
+
+        $insert->execute([
+            'user_id' =>
+                $userId,
+
+            'wallet_id' =>
+                $walletId,
+
+            'network' =>
+                $asset['network'],
+
+            'asset_type' =>
+                $asset['asset_type'],
+
+            'contract_address' =>
+                $asset[
+                    'contract_address'
+                ],
+
+            'symbol' =>
+                $asset['symbol'],
+
+            'asset_name' =>
+                $asset['asset_name'],
+
+            'quantity' =>
+                $asset['quantity'],
+
+            'current_price' =>
+                $asset[
+                    'current_price'
+                ],
+
+            'current_value' =>
+                $asset[
+                    'current_value'
+                ],
+
+            'external_asset_id' =>
+                $asset[
+                    'external_asset_id'
+                ],
+        ]);
+    }
+
+
+    $stmt = $pdo->prepare(
+        '
+        UPDATE crypto_wallet_groups
+        SET last_synced_at = NOW()
+        WHERE id = :wallet_id
+          AND user_id = :user_id
+        '
+    );
+
+    $stmt->execute([
+        'wallet_id' =>
+            $walletId,
+
+        'user_id' =>
+            $userId,
+    ]);
+
+
+    $pdo->commit();
+
+} catch (Throwable $exception) {
+
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+
+    http_response_code(500);
+
+    echo 'Crypto save failed: '
+        . $exception->getMessage();
+
+    exit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Result
+|--------------------------------------------------------------------------
+*/
+
+echo 'Wallet portfolio sync complete.'
+    . PHP_EOL;
+
+echo 'Assets found: '
+    . count($assets)
+    . PHP_EOL;
+
+
+$totalValue = 0.0;
+
+foreach ($assets as $asset) {
+
+    $totalValue +=
+        (float) $asset[
+            'current_value'
+        ];
+
+    echo PHP_EOL;
+
+    echo $asset['symbol']
+        . ': '
+        . number_format(
+            (float) $asset['quantity'],
+            8
+        )
+        . PHP_EOL;
+
+    echo 'Price: $'
+        . number_format(
+            (float) $asset[
+                'current_price'
+            ],
+            4
+        )
+        . PHP_EOL;
+
+    echo 'Value: $'
+        . number_format(
+            (float) $asset[
+                'current_value'
+            ],
+            2
+        )
+        . PHP_EOL;
+}
+
+
+echo PHP_EOL;
+
+echo 'Portfolio value: $'
+    . number_format(
+        $totalValue,
+        2
+    )
+    . PHP_EOL;
+
+
+/*
+ * Alchemy can return partial failures while still
+ * returning successful data from the other networks.
+ */
+$partialErrors =
+    $response['error']['partialErrors']
+    ?? [];
+
+if ($partialErrors !== []) {
+
+    echo PHP_EOL
+        . 'Warnings:'
+        . PHP_EOL;
+
+    foreach ($partialErrors as $error) {
+
+        echo '- '
+            . (
+                is_array($error)
+                    ? json_encode($error)
+                    : (string) $error
+            )
+            . PHP_EOL;
+    }
+}

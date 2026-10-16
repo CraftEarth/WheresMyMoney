@@ -14,18 +14,29 @@ function plaid_config(): array
 
     $config = require $path;
 
+    $environment = (string) (
+        $config['environment']
+        ?? 'sandbox'
+    );
+
+    $secretKey = $environment === 'production'
+        ? 'production_secret'
+        : 'sandbox_secret';
+
     if (
         empty($config['client_id']) ||
-        empty($config['secret'])
+        empty($config[$secretKey])
     ) {
         throw new RuntimeException(
             'Plaid credentials are incomplete.'
         );
     }
 
+    $config['secret'] =
+        $config[$secretKey];
+
     return $config;
 }
-
 
 function plaid_base_url(): string
 {

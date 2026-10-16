@@ -115,6 +115,71 @@ $stmt->execute([
 $cryptoValue = (float) $stmt->fetchColumn();
 
 
+/*
+ * BEGIN DASHBOARD CRYPTO ROLLUP
+ *
+ * Dashboard crypto value =
+ * manual priced holdings
+ * +
+ * synced priced wallet assets.
+ *
+ * Unpriced wallet tokens are intentionally excluded.
+ */
+
+$stmt = db()->prepare(
+    '
+    SELECT
+        COALESCE(
+            SUM(
+                quantity * current_price
+            ),
+            0
+        )
+    FROM crypto_holdings
+    WHERE user_id = :user_id
+      AND is_archived = 0
+      AND quantity > 0
+      AND current_price > 0
+    '
+);
+
+$stmt->execute([
+    'user_id' => $userId,
+]);
+
+$manualCryptoValue =
+    (float) $stmt->fetchColumn();
+
+
+$stmt = db()->prepare(
+    '
+    SELECT
+        COALESCE(
+            SUM(current_value),
+            0
+        )
+    FROM crypto_assets
+    WHERE user_id = :user_id
+      AND is_archived = 0
+      AND quantity > 0
+      AND current_price > 0
+    '
+);
+
+$stmt->execute([
+    'user_id' => $userId,
+]);
+
+$walletCryptoValue =
+    (float) $stmt->fetchColumn();
+
+
+$cryptoValue =
+    $manualCryptoValue
+    + $walletCryptoValue;
+
+/* END DASHBOARD CRYPTO ROLLUP */
+
 if (
     (int) $financialSettings[
         'include_crypto_net_worth'
@@ -388,6 +453,60 @@ foreach ($spending as $item) {
 }
 
 
+/*
+ * BEGIN DASHBOARD ALLOCATION FIX
+ */
+
+$cryptoPercentOfNetWorth = 0.00;
+$cashPercentOfNetWorth = 0.00;
+
+if ($netWorth > 0) {
+
+    $cryptoPercentOfNetWorth =
+        (
+            $cryptoValue
+            / $netWorth
+        ) * 100;
+
+    $cashPercentOfNetWorth =
+        (
+            $totalCash
+            / $netWorth
+        ) * 100;
+}
+
+/* END DASHBOARD ALLOCATION FIX */
+
+/*
+ * BEGIN DASHBOARD DEBT TOTAL
+ *
+ * Liabilities are active accounts included in net worth
+ * whose current balance is negative.
+ */
+
+$totalDebt = 0.00;
+
+foreach ($allAccounts as $account) {
+
+    $balance =
+        (float) (
+            $account['balance_current']
+            ?? 0
+        );
+
+    if (
+        (int) (
+            $account['include_in_net_worth']
+            ?? 0
+        ) === 1 &&
+        $balance < 0
+    ) {
+        $totalDebt += abs($balance);
+    }
+}
+
+/* END DASHBOARD DEBT TOTAL */
+
 $summary = [
     'cash' => $totalCash,
     'income' => $monthlyIncome,
@@ -397,6 +516,52 @@ $summary = [
     'net_worth' => $netWorth,
     'crypto' => $cryptoValue,
 ];
+
+/*
+ * BEGIN DASHBOARD CRYPTO SUMMARY KEYS
+ */
+
+$summary['crypto'] =
+    $cryptoValue;
+
+$summary['crypto_percent'] =
+    $cryptoPercentOfNetWorth;
+
+$summary['cash_percent'] =
+    $cashPercentOfNetWorth;
+
+/* END DASHBOARD CRYPTO SUMMARY KEYS */
+
+/*
+ * BEGIN MONEY ALLOCATION SUMMARY
+ */
+
+$summary['cash'] =
+    $totalCash;
+
+$summary['crypto'] =
+    $cryptoValue;
+
+$summary['debt'] =
+    $totalDebt;
+
+$summary['bills'] =
+    $upcomingBills;
+
+$summary['net_worth'] =
+    $netWorth;
+
+$summary['cash_percent'] =
+    $netWorth > 0
+        ? ($totalCash / $netWorth) * 100
+        : 0.00;
+
+$summary['crypto_percent'] =
+    $netWorth > 0
+        ? ($cryptoValue / $netWorth) * 100
+        : 0.00;
+
+/* END MONEY ALLOCATION SUMMARY */
 
 $accounts = array_slice(
     $allAccounts,

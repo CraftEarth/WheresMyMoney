@@ -1,0 +1,323 @@
+<div class="app-layout">
+
+    <main class="app-main">
+
+        <header class="crypto-header">
+
+            <div>
+
+                <p class="app-greeting">
+                    Digital assets
+                </p>
+
+                <h1>
+                    Add Wallet
+                </h1>
+
+                <p class="crypto-subtitle">
+                    Add public addresses for read-only tracking.
+                </p>
+
+            </div>
+
+            <div class="crypto-actions">
+
+                <a
+                    class="secondary-button"
+                    href="<?= e(
+                        url('crypto.php')
+                    ); ?>"
+                >
+                    Back to Crypto
+                </a>
+
+            </div>
+
+        </header>
+
+
+        <section class="crypto-card">
+
+            <div
+                style="
+                    display:flex;
+                    gap:8px;
+                    margin-bottom:20px;
+                "
+            >
+
+                <button
+                    type="button"
+                    id="wallet-tab-metamask"
+                    class="<?= $walletType === 'metamask'
+                        ? 'primary-button'
+                        : 'secondary-button'; ?>"
+                    onclick="selectWalletType('metamask')"
+                >
+                    MetaMask
+                </button>
+
+                <button
+                    type="button"
+                    id="wallet-tab-phantom"
+                    class="<?= $walletType === 'phantom'
+                        ? 'primary-button'
+                        : 'secondary-button'; ?>"
+                    onclick="selectWalletType('phantom')"
+                >
+                    Phantom
+                </button>
+
+            </div>
+
+
+            <?php if ($errors !== []): ?>
+
+                <div
+                    style="
+                        margin-bottom:16px;
+                        padding:12px;
+                        border:1px solid #ddd;
+                    "
+                >
+
+                    <?php foreach (
+                        $errors as $error
+                    ): ?>
+
+                        <div>
+                            <?= e($error); ?>
+                        </div>
+
+                    <?php endforeach; ?>
+
+                </div>
+
+            <?php endif; ?>
+
+
+            <form
+                method="post"
+                action="<?= e(
+                    url('crypto-wallet-form.php')
+                ); ?>"
+                style="
+                    max-width:800px;
+                    display:grid;
+                    gap:16px;
+                "
+            >
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= e(
+                        csrf_token()
+                    ); ?>"
+                >
+
+                <input
+                    type="hidden"
+                    id="wallet_type"
+                    name="wallet_type"
+                    value="<?= e(
+                        $walletType
+                    ); ?>"
+                >
+
+
+                <label>
+
+                    <strong>
+                        Wallet Label
+                    </strong>
+
+                    <input
+                        id="wallet_label"
+                        type="text"
+                        name="wallet_label"
+                        maxlength="120"
+                        value="<?= e(
+                            $walletLabel
+                        ); ?>"
+                        required
+                    >
+
+                </label>
+
+
+                <hr>
+
+
+                <label>
+
+                    <strong>
+                        Ethereum / EVM Address
+                    </strong>
+
+                    <input
+                        type="text"
+                        name="evm_address"
+                        value="<?= e(
+                            $evmAddress
+                        ); ?>"
+                        placeholder="0x..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+
+                    <small>
+                        Used for Ethereum, Base, Polygon,
+                        Arbitrum and other EVM networks.
+                    </small>
+
+                </label>
+
+
+                <label>
+
+                    <strong>
+                        Solana Address
+                    </strong>
+
+                    <input
+                        type="text"
+                        name="solana_address"
+                        value="<?= e(
+                            $solanaAddress
+                        ); ?>"
+                        placeholder="Solana public address"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+
+                </label>
+
+
+                <label>
+
+                    <strong>
+                        Bitcoin Address
+                    </strong>
+
+                    <input
+                        type="text"
+                        name="bitcoin_address"
+                        value="<?= e(
+                            $bitcoinAddress
+                        ); ?>"
+                        placeholder="bc1... / 1... / 3..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+
+                </label>
+
+
+                <p>
+                    Public addresses only.
+                    Never enter a seed phrase,
+                    private key, recovery phrase,
+                    or wallet password.
+                </p>
+
+
+                <div
+                    style="
+                        display:flex;
+                        gap:8px;
+                    "
+                >
+
+                    <button
+                        type="submit"
+                        class="primary-button"
+                    >
+                        Save Wallet
+                    </button>
+
+                    <a
+                        class="secondary-button"
+                        href="<?= e(
+                            url('crypto.php')
+                        ); ?>"
+                    >
+                        Cancel
+                    </a>
+
+                </div>
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script>
+
+function selectWalletType(type) {
+
+    const typeInput =
+        document.getElementById(
+            'wallet_type'
+        );
+
+    const labelInput =
+        document.getElementById(
+            'wallet_label'
+        );
+
+    const metaButton =
+        document.getElementById(
+            'wallet-tab-metamask'
+        );
+
+    const phantomButton =
+        document.getElementById(
+            'wallet-tab-phantom'
+        );
+
+
+    typeInput.value = type;
+
+
+    if (type === 'metamask') {
+
+        metaButton.className =
+            'primary-button';
+
+        phantomButton.className =
+            'secondary-button';
+
+        if (
+            labelInput.value === '' ||
+            labelInput.value ===
+                'My Phantom'
+        ) {
+            labelInput.value =
+                'My MetaMask';
+        }
+
+    } else {
+
+        phantomButton.className =
+            'primary-button';
+
+        metaButton.className =
+            'secondary-button';
+
+        if (
+            labelInput.value === '' ||
+            labelInput.value ===
+                'My MetaMask'
+        ) {
+            labelInput.value =
+                'My Phantom';
+        }
+    }
+}
+
+</script>

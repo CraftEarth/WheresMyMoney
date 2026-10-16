@@ -92,11 +92,8 @@
             crypto, and investments.
         </p>
 
-        <button type="button">
-            + Link Account
-        </button>
+        <a class="primary-button" href="<?= e(url('link-account.php')); ?>">+ Link Account</a>
 
     </div>
 
 </aside>
-

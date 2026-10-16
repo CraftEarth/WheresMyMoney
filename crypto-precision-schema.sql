@@ -1,0 +1,4 @@
+ALTER TABLE crypto_assets
+    MODIFY quantity DECIMAL(50,24) NOT NULL DEFAULT 0,
+    MODIFY current_price DECIMAL(50,24) NULL,
+    MODIFY current_value DECIMAL(50,24) NOT NULL DEFAULT 0;

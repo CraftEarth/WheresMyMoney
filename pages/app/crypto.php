@@ -24,6 +24,15 @@
             <div class="crypto-actions">
 
                 <a
+                    class="secondary-button"
+                    href="<?= e(
+                        url('crypto-wallet-form.php')
+                    ); ?>"
+                >
+                    + Add Wallet
+                </a>
+
+                <a
                     class="primary-button"
                     href="<?= e(
                         url('crypto-form.php')
@@ -67,7 +76,7 @@
                 </strong>
 
                 <small>
-                    From entered average cost
+                    Known cost basis only
                 </small>
 
             </article>
@@ -93,7 +102,7 @@
                 </strong>
 
                 <small>
-                    Tracked unrealized position
+                    Known cost basis positions only
                 </small>
 
             </article>
@@ -118,6 +127,229 @@
         </section>
 
 
+
+        <!-- CONNECTED WALLETS SECTION -->
+
+        <?php
+
+        $walletStmt =
+            db()->prepare(
+                '
+                SELECT *
+                FROM crypto_wallet_groups
+                WHERE user_id = :user_id
+                  AND wallet_status = "active"
+                ORDER BY id ASC
+                '
+            );
+
+        $walletStmt->execute([
+            'user_id' =>
+                current_user_id(),
+        ]);
+
+        $connectedWallets =
+            $walletStmt->fetchAll();
+
+        ?>
+
+
+        <section class="crypto-card">
+
+            <div class="crypto-card-heading">
+
+                <div>
+
+                    <small>
+                        Wallets
+                    </small>
+
+                    <h2>
+                        Connected Wallets
+                    </h2>
+
+                </div>
+
+                <a
+                    class="secondary-button"
+                    href="<?= e(
+                        url(
+                            'crypto-wallet-form.php'
+                        )
+                    ); ?>"
+                >
+                    + Add Wallet
+                </a>
+
+            </div>
+
+
+            <?php if (
+                $connectedWallets === []
+            ): ?>
+
+                <p>
+                    No connected wallets yet.
+                </p>
+
+            <?php else: ?>
+
+                <?php foreach (
+                    $connectedWallets
+                    as $wallet
+                ): ?>
+
+                    <?php
+
+                    $addressStmt =
+                        db()->prepare(
+                            '
+                            SELECT *
+                            FROM crypto_wallet_addresses
+                            WHERE user_id = :user_id
+                              AND wallet_group_id = :wallet_id
+                              AND address_status = "active"
+                            ORDER BY id ASC
+                            '
+                        );
+
+                    $addressStmt->execute([
+                        'user_id' =>
+                            current_user_id(),
+
+                        'wallet_id' =>
+                            $wallet['id'],
+                    ]);
+
+                    $walletAddresses =
+                        $addressStmt->fetchAll();
+
+                    ?>
+
+
+                    <div
+                        style="
+                            border-top:1px solid #e5e7eb;
+                            padding:14px 0;
+                        "
+                    >
+
+                        <strong>
+                            <?= e(
+                                $wallet[
+                                    'wallet_label'
+                                ]
+                            ); ?>
+                        </strong>
+
+                        <span>
+                            (
+                            <?= e(
+                                ucfirst(
+                                    $wallet[
+                                        'wallet_type'
+                                    ]
+                                )
+                            ); ?>
+                            )
+                        </span>
+
+
+                        <?php foreach (
+                            $walletAddresses
+                            as $address
+                        ): ?>
+
+                            <div
+                                style="
+                                    margin-top:6px;
+                                    font-size:13px;
+                                "
+                            >
+
+                                <strong>
+                                    <?= e(
+                                        strtoupper(
+                                            $address[
+                                                'address_type'
+                                            ]
+                                        )
+                                    ); ?>
+                                </strong>
+
+                                &nbsp;
+
+                                <?= e(
+                                    substr(
+                                        $address[
+                                            'wallet_address'
+                                        ],
+                                        0,
+                                        12
+                                    )
+                                ); ?>
+
+                                ...
+
+                                <?= e(
+                                    substr(
+                                        $address[
+                                            'wallet_address'
+                                        ],
+                                        -8
+                                    )
+                                ); ?>
+
+                            </div>
+
+                        <?php endforeach; ?>
+
+
+                        <div
+                            style="
+                                margin-top:8px;
+                                display:flex;
+                                align-items:center;
+                                gap:10px;
+                            "
+                        >
+
+                            <a
+                                class="primary-button"
+                                href="<?= e(
+                                    url(
+                                        'crypto-wallet-sync.php?wallet_id='
+                                        . $wallet['id']
+                                    )
+                                ); ?>"
+                            >
+                                Sync Wallet
+                            </a>
+
+                            <small>
+                                <?= !empty(
+                                    $wallet[
+                                        'last_synced_at'
+                                    ]
+                                )
+                                    ? 'Last synced '
+                                        . e(
+                                            $wallet[
+                                                'last_synced_at'
+                                            ]
+                                        )
+                                    : 'Not synced yet'; ?>
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                <?php endforeach; ?>
+
+            <?php endif; ?>
+
+        </section>
         <section class="crypto-card">
 
             <div class="crypto-card-heading">
@@ -217,21 +449,24 @@
 
 
                             <div>
-                                <?= number_format(
-                                    (float) $holding[
-                                        'quantity'
-                                    ],
-                                    6
-                                ); ?>
+                                <span class="crypto-quantity-value"><?= e(
+                                    crypto_display_quantity(
+                                        (float) $holding[
+                                            'quantity'
+                                        ]
+                                    )
+                                ); ?></span>
                             </div>
 
 
                             <div>
-                                <?= money(
-                                    (float) $holding[
-                                        'current_price'
-                                    ]
-                                ); ?>
+                                <span class="crypto-price-value"><?= e(
+                                    crypto_display_price(
+                                        (float) $holding[
+                                            'current_price'
+                                        ]
+                                    )
+                                ); ?></span>
                             </div>
 
 
@@ -246,10 +481,18 @@
                             <div class="crypto-value-cell">
 
                                 <strong>
-                                    <?= money(
-                                        (float) $holding[
-                                            'value'
-                                        ]
+                                    <?= e(
+                                        crypto_display_value(
+                                            (float) $holding[
+                                                'value'
+                                            ],
+                                            (float) $holding[
+                                                'current_price'
+                                            ],
+                                            (float) $holding[
+                                                'quantity'
+                                            ]
+                                        )
                                     ); ?>
                                 </strong>
 
@@ -299,47 +542,60 @@
 
                             <div class="crypto-actions-cell">
 
-                                <a
-                                    href="<?= e(
-                                        url(
-                                            'crypto-form.php?id='
-                                            . $holding['id']
-                                        )
-                                    ); ?>"
-                                >
-                                    Edit
-                                </a>
+                                <?php if (
+                                    ($holding['source_type'] ?? 'manual')
+                                    === 'manual'
+                                ): ?>
 
-                                <form
-                                    method="post"
-                                    action="<?= e(
-                                        url(
-                                            'crypto-archive.php'
-                                        )
-                                    ); ?>"
-                                >
+                                    <a
+                                        href="<?= e(
+                                            url(
+                                                'crypto-form.php?id='
+                                                . $holding['id']
+                                            )
+                                        ); ?>"
+                                    >
+                                        Edit
+                                    </a>
 
-                                    <input
-                                        type="hidden"
-                                        name="csrf_token"
-                                        value="<?= e(
-                                            csrf_token()
+                                    <form
+                                        method="post"
+                                        action="<?= e(
+                                            url(
+                                                'crypto-archive.php'
+                                            )
                                         ); ?>"
                                     >
 
-                                    <input
-                                        type="hidden"
-                                        name="holding_id"
-                                        value="<?= (int) $holding[
-                                            'id'
-                                        ]; ?>"
-                                    >
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?= e(
+                                                csrf_token()
+                                            ); ?>"
+                                        >
 
-                                    <button type="submit">
-                                        Archive
-                                    </button>
+                                        <input
+                                            type="hidden"
+                                            name="holding_id"
+                                            value="<?= (int) $holding[
+                                                'id'
+                                            ]; ?>"
+                                        >
 
-                                </form>
+                                        <button type="submit">
+                                            Archive
+                                        </button>
+
+                                    </form>
+
+                                <?php else: ?>
+
+                                    <small>
+                                        Synced
+                                    </small>
+
+                                <?php endif; ?>
 
                             </div>
 

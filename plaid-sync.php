@@ -11,6 +11,13 @@ header('Content-Type: text/plain');
 $userId = current_user_id();
 $pdo = db();
 
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
 function plaid_local_account_id(
     PDO $pdo,
     int $userId,
@@ -45,27 +52,18 @@ function plaid_signed_amount(
     array $transaction
 ): float {
     /*
-     * Plaid amounts:
-     * positive = money leaving account
-     * negative = money entering account
+     * Plaid:
+     * positive = money leaving
+     * negative = money entering
      *
-     * Our ledger uses:
-     * negative = expense
-     * positive = income
+     * Our ledger:
+     * negative = outgoing
+     * positive = incoming
      */
     return -1 * (float) (
         $transaction['amount']
         ?? 0
     );
-}
-
-
-function plaid_transaction_type(
-    float $signedAmount
-): string {
-    return $signedAmount >= 0
-        ? 'income'
-        : 'expense';
 }
 
 
@@ -97,6 +95,73 @@ function plaid_transaction_category(
 }
 
 
+/*
+ * Convert Plaid account balance into our
+ * asset/liability convention.
+ *
+ * Depository:
+ *   $200 balance = +200 asset
+ *
+ * Credit / loan:
+ *   $200 owed = -200 liability
+ */
+function plaid_current_balance(
+    array $account
+): float {
+    $current = (float) (
+        $account['balances']['current']
+        ?? 0
+    );
+
+    $type = strtolower(
+        trim(
+            (string) (
+                $account['type']
+                ?? ''
+            )
+        )
+    );
+
+    if (
+        $type === 'credit' ||
+        $type === 'loan'
+    ) {
+        return -abs($current);
+    }
+
+    return $current;
+}
+
+
+function plaid_available_balance(
+    array $account,
+    float $currentBalance
+): float {
+    $available =
+        $account['balances']['available']
+        ?? null;
+
+    if ($available !== null) {
+        return (float) $available;
+    }
+
+    /*
+     * Plaid does not always supply available.
+     * For asset accounts, current is the safest fallback.
+     *
+     * For liabilities this field isn't used in
+     * safe-to-spend anyway, so keep it positive.
+     */
+    return abs($currentBalance);
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Load active connections
+|--------------------------------------------------------------------------
+*/
+
 $stmt = $pdo->prepare(
     '
     SELECT
@@ -123,18 +188,34 @@ if ($connections === []) {
     exit;
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| Totals
+|--------------------------------------------------------------------------
+*/
+
+$totalAccountsUpdated = 0;
 $totalAdded = 0;
 $totalModified = 0;
 $totalRemoved = 0;
 $totalSkipped = 0;
+$totalConnections = 0;
+
+
+/*
+|--------------------------------------------------------------------------
+| Sync every Plaid Item
+|--------------------------------------------------------------------------
+*/
 
 foreach ($connections as $connection) {
+
     $connectionId =
         (int) $connection['id'];
 
-    $cursor = $connection[
-        'sync_cursor'
-    ];
+    $cursor =
+        $connection['sync_cursor'];
 
     $accessToken =
         plaid_decrypt_token(
@@ -143,76 +224,249 @@ foreach ($connections as $connection) {
             ]
         );
 
+    $totalConnections++;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Refresh account balances
+    |--------------------------------------------------------------------------
+    |
+    | Try Plaid's balance endpoint first.
+    | If the current Plaid plan/institution does not support it,
+    | fall back to /accounts/get.
+    |
+    */
+
+    try {
+        try {
+            $accountResponse =
+                plaid_request(
+                    '/accounts/balance/get',
+                    [
+                        'access_token' =>
+                            $accessToken,
+                    ]
+                );
+
+        } catch (Throwable $balanceException) {
+
+            $accountResponse =
+                plaid_request(
+                    '/accounts/get',
+                    [
+                        'access_token' =>
+                            $accessToken,
+                    ]
+                );
+        }
+
+
+        foreach (
+            $accountResponse['accounts'] ?? []
+            as $plaidAccount
+        ) {
+            $externalAccountId = trim(
+                (string) (
+                    $plaidAccount['account_id']
+                    ?? ''
+                )
+            );
+
+            if ($externalAccountId === '') {
+                $totalSkipped++;
+                continue;
+            }
+
+
+            $currentBalance =
+                plaid_current_balance(
+                    $plaidAccount
+                );
+
+            $availableBalance =
+                plaid_available_balance(
+                    $plaidAccount,
+                    $currentBalance
+                );
+
+
+            $stmt = $pdo->prepare(
+                '
+                UPDATE accounts
+                SET
+                    balance_current =
+                        :balance_current,
+
+                    balance_available =
+                        :balance_available,
+
+                    updated_at =
+                        NOW()
+
+                WHERE user_id =
+                        :user_id
+
+                  AND financial_connection_id =
+                        :connection_id
+
+                  AND external_account_id =
+                        :external_account_id
+
+                  AND source_type =
+                        "linked"
+
+                  AND account_status =
+                        "active"
+                '
+            );
+
+            $stmt->execute([
+                'balance_current' =>
+                    $currentBalance,
+
+                'balance_available' =>
+                    $availableBalance,
+
+                'user_id' =>
+                    $userId,
+
+                'connection_id' =>
+                    $connectionId,
+
+                'external_account_id' =>
+                    $externalAccountId,
+            ]);
+
+
+            if ($stmt->rowCount() > 0) {
+                $totalAccountsUpdated++;
+            }
+        }
+
+    } catch (Throwable $exception) {
+
+        echo 'WARNING: balance refresh failed for connection '
+            . $connectionId
+            . ': '
+            . $exception->getMessage()
+            . PHP_EOL;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Pull transaction changes
+    |--------------------------------------------------------------------------
+    */
+
     $hasMore = true;
 
     $added = [];
     $modified = [];
     $removed = [];
 
-    while ($hasMore) {
-        $payload = [
-            'access_token' =>
-                $accessToken,
+    try {
 
-            'count' => 500,
+        while ($hasMore) {
 
-            'options' => [
-                'include_original_description' =>
-                    true,
-            ],
-        ];
+            $payload = [
+                'access_token' =>
+                    $accessToken,
 
-        if (
-            $cursor !== null &&
-            $cursor !== ''
-        ) {
-            $payload['cursor'] =
-                $cursor;
+                'count' =>
+                    500,
+
+                'options' => [
+                    'include_original_description' =>
+                        true,
+                ],
+            ];
+
+
+            if (
+                $cursor !== null &&
+                $cursor !== ''
+            ) {
+                $payload['cursor'] =
+                    $cursor;
+            }
+
+
+            $response =
+                plaid_request(
+                    '/transactions/sync',
+                    $payload
+                );
+
+
+            foreach (
+                $response['added'] ?? []
+                as $item
+            ) {
+                $added[] = $item;
+            }
+
+
+            foreach (
+                $response['modified'] ?? []
+                as $item
+            ) {
+                $modified[] = $item;
+            }
+
+
+            foreach (
+                $response['removed'] ?? []
+                as $item
+            ) {
+                $removed[] = $item;
+            }
+
+
+            $cursor = (string) (
+                $response['next_cursor']
+                ?? $cursor
+                ?? ''
+            );
+
+
+            $hasMore = (bool) (
+                $response['has_more']
+                ?? false
+            );
         }
 
-        $response = plaid_request(
-            '/transactions/sync',
-            $payload
-        );
+    } catch (Throwable $exception) {
 
-        foreach (
-            $response['added'] ?? []
-            as $item
-        ) {
-            $added[] = $item;
-        }
+        echo 'ERROR reading transactions for connection '
+            . $connectionId
+            . ': '
+            . $exception->getMessage()
+            . PHP_EOL;
 
-        foreach (
-            $response['modified'] ?? []
-            as $item
-        ) {
-            $modified[] = $item;
-        }
-
-        foreach (
-            $response['removed'] ?? []
-            as $item
-        ) {
-            $removed[] = $item;
-        }
-
-        $cursor = (string) (
-            $response['next_cursor']
-            ?? $cursor
-            ?? ''
-        );
-
-        $hasMore = (bool) (
-            $response['has_more']
-            ?? false
-        );
+        continue;
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Persist transaction changes atomically
+    |--------------------------------------------------------------------------
+    */
 
     $pdo->beginTransaction();
 
     try {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Added
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($added as $plaidTx) {
+
             $externalAccountId = trim(
                 (string) (
                     $plaidTx['account_id']
@@ -222,12 +476,11 @@ foreach ($connections as $connection) {
 
             $externalTransactionId = trim(
                 (string) (
-                    $plaidTx[
-                        'transaction_id'
-                    ]
+                    $plaidTx['transaction_id']
                     ?? ''
                 )
             );
+
 
             if (
                 $externalAccountId === '' ||
@@ -237,6 +490,7 @@ foreach ($connections as $connection) {
                 continue;
             }
 
+
             $accountId =
                 plaid_local_account_id(
                     $pdo,
@@ -244,10 +498,12 @@ foreach ($connections as $connection) {
                     $externalAccountId
                 );
 
+
             if ($accountId === null) {
                 $totalSkipped++;
                 continue;
             }
+
 
             $rawDescription = trim(
                 (string) (
@@ -259,6 +515,7 @@ foreach ($connections as $connection) {
                 )
             );
 
+
             $fallbackDescription = trim(
                 (string) (
                     $plaidTx['merchant_name']
@@ -267,10 +524,12 @@ foreach ($connections as $connection) {
                 )
             );
 
-            $category =
+
+            $providerCategory =
                 plaid_transaction_category(
                     $plaidTx
                 );
+
 
             $normalized =
                 normalize_transaction(
@@ -278,13 +537,15 @@ foreach ($connections as $connection) {
                     $userId,
                     $rawDescription,
                     $fallbackDescription,
-                    $category
+                    $providerCategory
                 );
+
 
             $amount =
                 plaid_signed_amount(
                     $plaidTx
                 );
+
 
             $classification =
                 transaction_classification(
@@ -293,38 +554,47 @@ foreach ($connections as $connection) {
                     $amount
                 );
 
-            $type =
+
+            $transactionType =
                 $classification[
                     'transaction_type'
                 ];
+
 
             $category =
                 $classification[
                     'category'
                 ];
 
+
             $isTransfer =
-                $classification[
+                (int) $classification[
                     'is_transfer'
                 ];
+
 
             $needsReview =
                 $normalized['matched']
                     ? 0
-                    : $classification[
+                    : (int) $classification[
                         'needs_review'
                     ];
 
+
             $status =
-                !empty($plaidTx['pending'])
+                !empty(
+                    $plaidTx['pending']
+                )
                     ? 'pending'
                     : 'posted';
+
 
             $pendingTransactionId =
                 $plaidTx[
                     'pending_transaction_id'
                 ]
                 ?? null;
+
 
             $stmt = $pdo->prepare(
                 '
@@ -366,30 +636,47 @@ foreach ($connections as $connection) {
                     NULL,
                     0
                 )
+
                 ON DUPLICATE KEY UPDATE
+
                     account_id =
                         VALUES(account_id),
+
                     pending_transaction_id =
                         VALUES(pending_transaction_id),
+
                     transaction_date =
                         VALUES(transaction_date),
+
                     description =
                         VALUES(description),
+
                     raw_description =
                         VALUES(raw_description),
+
                     category =
                         VALUES(category),
+
                     transaction_type =
                         VALUES(transaction_type),
+
                     transaction_status =
                         VALUES(transaction_status),
+
                     amount =
                         VALUES(amount),
+
+                    is_transfer =
+                        VALUES(is_transfer),
+
                     needs_review =
                         VALUES(needs_review),
-                    is_archived = 0
+
+                    is_archived =
+                        0
                 '
             );
+
 
             $stmt->execute([
                 'user_id' =>
@@ -419,12 +706,10 @@ foreach ($connections as $connection) {
                     $rawDescription,
 
                 'category' =>
-                    $classification[
-                        'category'
-                    ],
+                    $category,
 
                 'transaction_type' =>
-                    $type,
+                    $transactionType,
 
                 'transaction_status' =>
                     $status,
@@ -439,11 +724,26 @@ foreach ($connections as $connection) {
                     $needsReview,
             ]);
 
+
             $totalAdded++;
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Modified
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($modified as $plaidTx) {
+
+            $externalAccountId = trim(
+                (string) (
+                    $plaidTx['account_id']
+                    ?? ''
+                )
+            );
+
             $externalTransactionId = trim(
                 (string) (
                     $plaidTx[
@@ -453,10 +753,29 @@ foreach ($connections as $connection) {
                 )
             );
 
-            if ($externalTransactionId === '') {
+
+            if (
+                $externalAccountId === '' ||
+                $externalTransactionId === ''
+            ) {
                 $totalSkipped++;
                 continue;
             }
+
+
+            $accountId =
+                plaid_local_account_id(
+                    $pdo,
+                    $userId,
+                    $externalAccountId
+                );
+
+
+            if ($accountId === null) {
+                $totalSkipped++;
+                continue;
+            }
+
 
             $rawDescription = trim(
                 (string) (
@@ -468,6 +787,7 @@ foreach ($connections as $connection) {
                 )
             );
 
+
             $fallbackDescription = trim(
                 (string) (
                     $plaidTx['merchant_name']
@@ -476,10 +796,12 @@ foreach ($connections as $connection) {
                 )
             );
 
-            $category =
+
+            $providerCategory =
                 plaid_transaction_category(
                     $plaidTx
                 );
+
 
             $normalized =
                 normalize_transaction(
@@ -487,13 +809,15 @@ foreach ($connections as $connection) {
                     $userId,
                     $rawDescription,
                     $fallbackDescription,
-                    $category
+                    $providerCategory
                 );
+
 
             $amount =
                 plaid_signed_amount(
                     $plaidTx
                 );
+
 
             $classification =
                 transaction_classification(
@@ -502,10 +826,56 @@ foreach ($connections as $connection) {
                     $amount
                 );
 
+
+            $transactionType =
+                $classification[
+                    'transaction_type'
+                ];
+
+
+            $category =
+                $classification[
+                    'category'
+                ];
+
+
+            $isTransfer =
+                (int) $classification[
+                    'is_transfer'
+                ];
+
+
+            $needsReview =
+                $normalized['matched']
+                    ? 0
+                    : (int) $classification[
+                        'needs_review'
+                    ];
+
+
+            $status =
+                !empty(
+                    $plaidTx['pending']
+                )
+                    ? 'pending'
+                    : 'posted';
+
+
+            $pendingTransactionId =
+                $plaidTx[
+                    'pending_transaction_id'
+                ]
+                ?? null;
+
+
             $stmt = $pdo->prepare(
                 '
                 UPDATE transactions
+
                 SET
+                    account_id =
+                        :account_id,
+
                     transaction_date =
                         :transaction_date,
 
@@ -536,18 +906,25 @@ foreach ($connections as $connection) {
                     needs_review =
                         :needs_review,
 
-                    is_archived = 0
+                    is_archived =
+                        0
 
                 WHERE user_id =
                         :user_id
+
                   AND source_type =
                         "plaid"
+
                   AND external_transaction_id =
                         :external_transaction_id
                 '
             );
 
+
             $stmt->execute([
+                'account_id' =>
+                    $accountId,
+
                 'transaction_date' =>
                     (string) (
                         $plaidTx['date']
@@ -563,38 +940,22 @@ foreach ($connections as $connection) {
                     $rawDescription,
 
                 'category' =>
-                    $classification[
-                        'category'
-                    ],
+                    $category,
 
                 'transaction_type' =>
-                    $classification[
-                        'transaction_type'
-                    ],
+                    $transactionType,
 
                 'is_transfer' =>
-                    $classification[
-                        'is_transfer'
-                    ],
+                    $isTransfer,
 
                 'transaction_status' =>
-                    !empty(
-                        $plaidTx['pending']
-                    )
-                        ? 'pending'
-                        : 'posted',
+                    $status,
 
                 'amount' =>
                     $amount,
 
                 'pending_transaction_id' =>
-                    $plaidTx[
-                        'pending_transaction_id'
-                    ]
-                    ?? null,
-
-                'is_transfer' =>
-                    $isTransfer,
+                    $pendingTransactionId,
 
                 'needs_review' =>
                     $needsReview,
@@ -606,11 +967,19 @@ foreach ($connections as $connection) {
                     $externalTransactionId,
             ]);
 
+
             $totalModified++;
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Removed
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($removed as $plaidTx) {
+
             $externalTransactionId = trim(
                 (string) (
                     $plaidTx[
@@ -620,20 +989,30 @@ foreach ($connections as $connection) {
                 )
             );
 
+
             if ($externalTransactionId === '') {
+                $totalSkipped++;
                 continue;
             }
+
 
             $stmt = $pdo->prepare(
                 '
                 UPDATE transactions
+
                 SET is_archived = 1
-                WHERE user_id = :user_id
-                  AND source_type = "plaid"
+
+                WHERE user_id =
+                        :user_id
+
+                  AND source_type =
+                        "plaid"
+
                   AND external_transaction_id =
                         :external_transaction_id
                 '
             );
+
 
             $stmt->execute([
                 'user_id' =>
@@ -643,13 +1022,21 @@ foreach ($connections as $connection) {
                     $externalTransactionId,
             ]);
 
+
             $totalRemoved++;
         }
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Connection state
+        |--------------------------------------------------------------------------
+        */
+
         $stmt = $pdo->prepare(
             '
             UPDATE financial_connections
+
             SET
                 sync_cursor =
                     :sync_cursor,
@@ -662,10 +1049,12 @@ foreach ($connections as $connection) {
 
             WHERE id =
                     :connection_id
+
               AND user_id =
                     :user_id
             '
         );
+
 
         $stmt->execute([
             'sync_cursor' =>
@@ -678,40 +1067,55 @@ foreach ($connections as $connection) {
                 $userId,
         ]);
 
+
         $pdo->commit();
 
     } catch (Throwable $exception) {
-        $pdo->rollBack();
 
-        echo 'ERROR syncing connection '
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+
+        echo 'ERROR saving connection '
             . $connectionId
             . ': '
-            . $exception->getMessage();
+            . $exception->getMessage()
+            . PHP_EOL;
 
         exit;
     }
 }
 
 
-echo 'Plaid transaction sync complete.'
+/*
+|--------------------------------------------------------------------------
+| Result
+|--------------------------------------------------------------------------
+*/
+
+echo 'Plaid full sync complete.'
     . PHP_EOL;
 
-echo 'Added: '
+echo 'Connections checked: '
+    . $totalConnections
+    . PHP_EOL;
+
+echo 'Account balances updated: '
+    . $totalAccountsUpdated
+    . PHP_EOL;
+
+echo 'Transactions added: '
     . $totalAdded
     . PHP_EOL;
 
-echo 'Modified: '
+echo 'Transactions modified: '
     . $totalModified
     . PHP_EOL;
 
-echo 'Removed: '
+echo 'Transactions removed: '
     . $totalRemoved
     . PHP_EOL;
 
 echo 'Skipped: '
     . $totalSkipped
     . PHP_EOL;
-
-
-
-
